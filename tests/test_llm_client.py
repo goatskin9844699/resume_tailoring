@@ -16,7 +16,7 @@ def test_init_with_api_key():
     """Test initialization with API key."""
     client = OpenRouterLLMClient(api_key="test_key")
     assert client.api_key == "test_key"
-    assert client.model == "anthropic/claude-3-sonnet-20240229"
+    assert client.model == "google/gemini-2.0-flash-lite-001"
 
 
 def test_init_without_api_key(monkeypatch):
