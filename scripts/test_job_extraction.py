@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import logging
 import os
 from typing import Dict, Optional
 
@@ -11,6 +12,10 @@ from resume_tailor.extractor.extractor import JobDescriptionExtractor
 from resume_tailor.llm.client import OpenRouterLLMClient, LLMError
 from resume_tailor.exceptions import ExtractorError
 
+# Configure logging to suppress debug messages
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 def setup_llm_client() -> OpenRouterLLMClient:
     """Set up the LLM client with API key from environment."""
@@ -56,45 +61,30 @@ def extract_job_description(url: str) -> Optional[Dict]:
     """
     try:
         # Set up components
-        print(f"\nSetting up LLM client...")
         llm_client = setup_llm_client()
-        
-        print(f"Initializing extractor...")
         extractor = JobDescriptionExtractor(llm_client=llm_client)
         
         # Extract data
-        print(f"\nExtracting data from URL: {url}")
-        print("Fetching content from URL...")
+        print(f"\nExtracting data from: {url}")
         content = extractor.scraper.fetch_content(url)
-        print(f"Content length: {len(content)} characters")
+        print("\n=== Raw Job Description ===\n")
+        print(content[:1000] + "..." if len(content) > 1000 else content)
+        print("\n" + "="*50)
         
-        print("\nGenerating prompt...")
         prompt = extractor._generate_prompt(content)
-        print(f"Prompt length: {len(prompt)} characters")
-        
-        print("\nSending to LLM...")
         job_data = extractor.llm.generate(prompt)
-        print(f"Raw LLM response type: {type(job_data)}")
-        print(f"Raw LLM response: {json.dumps(job_data, indent=2)}")
         
-        print("\nProcessing response...")
+        # Process response
         if "response" in job_data and isinstance(job_data["response"], str):
-            print("Found wrapped response, attempting to parse JSON...")
-            print(f"Wrapped response content: {job_data['response']}")
             try:
                 job_data = json.loads(job_data["response"])
-                print("Successfully parsed JSON response")
-            except json.JSONDecodeError as e:
-                print(f"Failed to parse JSON: {str(e)}")
-                print(f"Invalid JSON content: {job_data['response']}")
+            except json.JSONDecodeError:
                 raise ExtractorError("Invalid JSON response from LLM")
         
-        print("\nValidating job data...")
+        # Validate data
         if not job_data or not extractor._validate_job_data(job_data):
-            print("Job data validation failed")
             raise ExtractorError("Invalid or incomplete job description data")
         
-        print("Extraction successful!")
         return job_data
         
     except ExtractorError as e:
@@ -105,8 +95,6 @@ def extract_job_description(url: str) -> Optional[Dict]:
         return None
     except Exception as e:
         print(f"\nUnexpected error: {str(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
         return None
 
 
@@ -119,7 +107,6 @@ def main():
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         print("Error: OPENROUTER_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key (see .env.example)")
         return
 
     parser = argparse.ArgumentParser(description="Test job description extraction")
