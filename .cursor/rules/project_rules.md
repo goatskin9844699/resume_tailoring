@@ -11,7 +11,7 @@
 
 ### Module Structure
 - One class per file unless tightly coupled
-- `__init__.py` files should be minimal
+- Keep `__init__.py` files empty
 - Relative imports within the package
 - Absolute imports for external packages
 - Clear separation of public and private interfaces
