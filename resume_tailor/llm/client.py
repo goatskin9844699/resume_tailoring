@@ -102,11 +102,10 @@ class OpenRouterLLMClient(LLMClient):
             
             # Try to parse as JSON if possible
             try:
-                parsed = json.loads(response.content)
-                return parsed
+                return json.loads(response.content)
             except json.JSONDecodeError:
                 # If not JSON, return as plain text
-                return {"response": response.content}
+                return {"content": response.content}
                 
         except Exception as e:
             error_msg = f"Failed to communicate with OpenRouter: {str(e)}"
