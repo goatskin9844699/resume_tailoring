@@ -73,6 +73,35 @@
 - No side effects from tests allowed
 - Clean up all test artifacts
 
+### Test Isolation
+- Each test case should be fully isolated
+- Import statements should be inside test functions, not at module level
+- Exception: Test framework imports (e.g., pytest) can be at module level
+- Each test should test exactly one thing
+
+Example of good test isolation:
+```python
+import pytest  # Framework import at module level
+
+def test_specific_feature():
+    # Imports inside test function
+    from my_package import SpecificFeature
+    # Test implementation
+    assert SpecificFeature
+```
+
+Benefits:
+- Tests fail independently
+- Clear what each test is testing
+- No import side effects between tests
+- Easier to debug failures
+
+### Test Organization
+- One test file per module
+- Clear test names describing what is being tested
+- Group related tests in classes when appropriate
+- Use fixtures for common setup
+
 ## Continuous Integration
 - All tests must pass in CI
 - Coverage report generated in CI
