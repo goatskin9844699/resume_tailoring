@@ -4,6 +4,7 @@ from typing import Dict
 from urllib.parse import urlparse
 from ..llm.client import LLMClient
 from ..exceptions import ExtractorError
+from .scraper import WebScraper
 
 
 class JobDescriptionExtractor:
@@ -17,6 +18,7 @@ class JobDescriptionExtractor:
             llm_client: LLM client for processing job descriptions
         """
         self.llm = llm_client
+        self.scraper = WebScraper()
 
     def extract(self, url: str) -> Dict:
         """
@@ -43,8 +45,11 @@ class JobDescriptionExtractor:
             raise ExtractorError("Invalid URL")
 
         try:
+            # Fetch and clean content
+            content = self.scraper.fetch_content(url)
+            
             # Generate prompt for LLM
-            prompt = self._generate_prompt(url)
+            prompt = self._generate_prompt(content)
             
             # Get structured data from LLM
             job_data = self.llm.generate(prompt)
@@ -74,17 +79,19 @@ class JobDescriptionExtractor:
         except:
             return False
 
-    def _generate_prompt(self, url: str) -> str:
+    def _generate_prompt(self, content: str) -> str:
         """
         Generate the prompt for the LLM.
 
         Args:
-            url: Job posting URL
+            content: Cleaned job posting content
 
         Returns:
             Formatted prompt for the LLM
         """
-        return f"""Extract structured information from this job posting URL: {url}
+        return f"""Extract structured information from this job posting content:
+
+{content}
 
 Please provide the information in the following JSON format:
 {{

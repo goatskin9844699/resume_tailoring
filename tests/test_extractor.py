@@ -34,27 +34,58 @@ def mock_job_data():
     }
 
 
+@pytest.fixture
+def mock_content():
+    """Create mock job posting content."""
+    return """
+    Job Title: Software Engineer
+    Company: Test Company
+    
+    Summary:
+    We are looking for a talented software engineer...
+    
+    Responsibilities:
+    - Task 1
+    - Task 2
+    
+    Requirements:
+    - Req 1
+    - Req 2
+    """
+
+
 def test_init(extractor, mock_llm):
     """Test extractor initialization."""
     assert extractor.llm == mock_llm
+    assert extractor.scraper is not None
 
 
-def test_extract_success(extractor, mock_llm, mock_job_data):
+def test_extract_success(extractor, mock_llm, mock_job_data, mock_content):
     """Test successful job description extraction."""
-    mock_llm.generate.return_value = mock_job_data
-    
-    result = extractor.extract("https://example.com/job")
-    
-    assert result == mock_job_data
-    mock_llm.generate.assert_called_once()
+    # Mock the scraper to return our test content
+    with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
+        mock_llm.generate.return_value = mock_job_data
+        
+        result = extractor.extract("https://example.com/job")
+        
+        assert result == mock_job_data
+        mock_llm.generate.assert_called_once()
 
 
-def test_extract_llm_error(extractor, mock_llm):
+def test_extract_scraper_error(extractor, mock_llm):
+    """Test error handling when scraper fails."""
+    with patch.object(extractor.scraper, 'fetch_content', side_effect=ExtractorError("Scraping failed")):
+        with pytest.raises(ExtractorError, match="Failed to extract job description"):
+            extractor.extract("https://example.com/job")
+
+
+def test_extract_llm_error(extractor, mock_llm, mock_content):
     """Test error handling when LLM fails."""
-    mock_llm.generate.side_effect = Exception("LLM error")
-    
-    with pytest.raises(ExtractorError, match="Failed to extract job description"):
-        extractor.extract("https://example.com/job")
+    with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
+        mock_llm.generate.side_effect = Exception("LLM error")
+        
+        with pytest.raises(ExtractorError, match="Failed to extract job description"):
+            extractor.extract("https://example.com/job")
 
 
 def test_extract_invalid_url(extractor):
@@ -63,9 +94,10 @@ def test_extract_invalid_url(extractor):
         extractor.extract("not-a-url")
 
 
-def test_extract_empty_response(extractor, mock_llm):
+def test_extract_empty_response(extractor, mock_llm, mock_content):
     """Test error handling for empty LLM response."""
-    mock_llm.generate.return_value = {}
-    
-    with pytest.raises(ExtractorError, match="Empty job description data"):
-        extractor.extract("https://example.com/job") 
+    with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
+        mock_llm.generate.return_value = {}
+        
+        with pytest.raises(ExtractorError, match="Empty job description data"):
+            extractor.extract("https://example.com/job") 
