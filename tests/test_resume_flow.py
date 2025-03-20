@@ -105,7 +105,9 @@ def mock_job_data():
             "django",
             "leadership",
             "problem solving"
-        ]
+        ],
+        "is_complete": True,
+        "truncation_note": ""
     }
 
 @pytest.fixture
