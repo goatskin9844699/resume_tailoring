@@ -10,7 +10,6 @@ import os
 import yaml
 from typing import Dict, Any
 import pytest
-from unittest.mock import Mock, patch
 from dotenv import load_dotenv
 import logging
 
@@ -138,81 +137,38 @@ def run_resume_tailoring(job_url: str, resume_path: str, output_file: str = None
         print(f"Traceback: {traceback.format_exc()}")
         return None
 
-@pytest.fixture
-def mock_job_url():
-    """Mock job URL for testing."""
-    return "https://example.com/job"
-
-@pytest.fixture
-def mock_resume_path(tmp_path):
-    """Create a mock resume file for testing."""
-    resume_data = {
-        "basic": {
-            "name": "Test User",
-            "email": "test@example.com"
-        },
-        "education": [
-            {
-                "name": "Test Degree",
-                "school": "Test University",
-                "startdate": "2020",
-                "enddate": "2024"
-            }
-        ],
-        "experiences": [
-            {
-                "company": "Test Company",
-                "titles": [
-                    {
-                        "name": "Test Role",
-                        "startdate": "2020",
-                        "enddate": "Present"
-                    }
-                ],
-                "highlights": ["Test highlight"]
-            }
-        ]
-    }
-    
-    resume_file = tmp_path / "test_resume.yaml"
-    with open(resume_file, "w") as f:
-        yaml.dump(resume_data, f)
-    return str(resume_file)
-
-def test_complete_resume_tailoring_flow(mock_job_url, mock_resume_path):
-    """Test the complete resume tailoring flow."""
-    with patch("resume_tailor.llm.client.OpenRouterLLMClient") as mock_llm:
-        mock_llm.return_value.generate.return_value = {"content": yaml.dump({
-            "basic": {"name": "Test User", "email": "test@example.com"},
-            "education": [{"name": "Test Degree", "school": "Test University", "startdate": "2020", "enddate": "2024"}],
-            "experiences": [{"company": "Test Company", "titles": [{"name": "Test Role", "startdate": "2020", "enddate": "Present"}], "highlights": ["Test highlight"]}]
-        })}
-        
-        result = run_resume_tailoring(mock_job_url, mock_resume_path)
-        assert result is not None
-        assert result.basic["name"] == "Test User"
-
-def main():
-    """Main function to run the test script."""
-    # Load environment variables from .env file
-    load_dotenv()
-    
+def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Test end-to-end resume tailoring")
     parser.add_argument("url", help="URL of the job posting")
-    parser.add_argument(
-        "--resume",
-        "-r",
-        default="resume.yaml",
-        help="Path to resume YAML file (default: resume.yaml)"
-    )
+    parser.add_argument("resume", help="Path to resume YAML file")
     parser.add_argument(
         "--output",
         "-o",
         help="Output file for tailored resume (optional)",
         type=str
     )
+    return parser.parse_args()
+
+def test_complete_resume_tailoring_flow():
+    """Test the complete resume tailoring flow with real components."""
+    args = parse_args()
     
-    args = parser.parse_args()
+    # Run the complete flow
+    result = run_resume_tailoring(args.url, args.resume)
+    
+    # Verify the result
+    assert result is not None, "Resume tailoring failed"
+    assert hasattr(result, 'basic'), "Result missing basic information"
+    assert 'name' in result.basic, "Result missing name"
+    assert 'email' in result.basic, "Result missing email"
+
+def main():
+    """Main function to run the test script."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    args = parse_args()
     
     # Run the test
     result = run_resume_tailoring(
