@@ -81,4 +81,50 @@ This project uses:
 
 ## License
 
-MIT License 
+MIT License
+
+# Resume Tailoring
+
+A tool to help tailor resumes to job descriptions using AI.
+
+## Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/resume-tailoring/resume-tailoring.git
+cd resume-tailoring
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up your environment:
+   - Copy `.env.example` to `.env`
+   - Get your API key from [OpenRouter](https://openrouter.ai/keys)
+   - Add your API key to the `.env` file:
+     ```
+     OPENROUTER_API_KEY=your_api_key_here
+     ```
+
+## Testing the LLM Integration
+
+To test the LLM integration:
+
+1. Make sure you've set up your environment as described above
+2. Run the integration test script:
+```bash
+./scripts/test_llm_integration.py
+```
+
+The script will run a few test prompts to verify that the LLM integration is working correctly. You should see responses from the model for each test prompt.
+
+If you encounter any errors:
+- Verify that your API key is correctly set in the `.env` file
+- Check that all dependencies are installed
+- Ensure you have an active internet connection
+
+## Contributing
+
+[Your existing contributing guidelines here] 
