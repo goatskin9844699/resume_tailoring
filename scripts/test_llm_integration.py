@@ -2,10 +2,36 @@
 """Integration test script for the OpenRouter LLM client."""
 
 import os
+import logging
+from typing import List
 from dotenv import load_dotenv
 from resume_tailor.llm.client import OpenRouterLLMClient
 
-def main():
+# Configure logging to suppress debug messages
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+def test_prompts(client: OpenRouterLLMClient, prompts: List[str]) -> None:
+    """
+    Test a list of prompts with the LLM client.
+    
+    Args:
+        client: The LLM client instance
+        prompts: List of prompts to test
+    """
+    for prompt in prompts:
+        print("\nPrompt:", prompt)
+        print("-" * 50)
+        try:
+            response = client.generate(prompt)
+            print("Response:", response.get("content", response))
+        except Exception as e:
+            print(f"Error: {str(e)}")
+        print("-" * 50)
+
+def main() -> None:
+    """Run the LLM integration tests."""
     # Load environment variables from .env file
     load_dotenv()
     
@@ -13,7 +39,6 @@ def main():
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         print("Error: OPENROUTER_API_KEY not found in environment variables")
-        print("Please create a .env file with your API key (see .env.example)")
         return
 
     # Initialize the LLM client
@@ -26,17 +51,7 @@ def main():
         "Explain what a REST API is in one sentence."
     ]
 
-    # Test each prompt
-    for prompt in prompts:
-        print("\n" + "="*50)
-        print(f"Prompt: {prompt}")
-        print("-"*50)
-        
-        try:
-            response = client.generate(prompt)
-            print(f"Response: {response}")
-        except Exception as e:
-            print(f"Error: {str(e)}")
+    test_prompts(client, prompts)
 
 if __name__ == "__main__":
     main() 
