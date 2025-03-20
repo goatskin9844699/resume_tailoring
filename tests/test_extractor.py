@@ -149,4 +149,138 @@ def test_extract_incomplete_data(extractor, mock_llm, mock_content):
         mock_llm.generate.return_value = incomplete_data
         
         with pytest.raises(ExtractorError, match="Invalid or incomplete job description data"):
-            extractor.extract("https://example.com/job") 
+            extractor.extract("https://example.com/job")
+
+
+def test_extract_with_real_content(extractor, mock_llm):
+    """Test extraction with realistic job posting content."""
+    real_content = """
+    Software Engineer Position at TechCorp
+    
+    We are seeking a talented Software Engineer to join our team.
+    
+    Key Responsibilities:
+    - Develop and maintain web applications
+    - Write clean, efficient code
+    - Collaborate with team members
+    
+    Requirements:
+    - 3+ years of Python experience
+    - Strong problem-solving skills
+    - Experience with web frameworks
+    
+    Technical Skills:
+    - Python, Django, Flask
+    - SQL, PostgreSQL
+    - Git, Docker
+    
+    Soft Skills:
+    - Communication
+    - Teamwork
+    - Leadership
+    """
+    
+    mock_response = {
+        "company": "TechCorp",
+        "title": "Software Engineer",
+        "summary": "We are seeking a talented Software Engineer to join our team.",
+        "responsibilities": [
+            "Develop and maintain web applications",
+            "Write clean, efficient code",
+            "Collaborate with team members"
+        ],
+        "requirements": [
+            "3+ years of Python experience",
+            "Strong problem-solving skills",
+            "Experience with web frameworks"
+        ],
+        "technical_skills": [
+            "Python",
+            "Django",
+            "Flask",
+            "SQL",
+            "PostgreSQL",
+            "Git",
+            "Docker"
+        ],
+        "non_technical_skills": [
+            "Communication",
+            "Teamwork",
+            "Leadership"
+        ],
+        "ats_keywords": [
+            "python",
+            "django",
+            "flask",
+            "sql",
+            "postgresql",
+            "git",
+            "docker",
+            "software engineer",
+            "web development"
+        ]
+    }
+    
+    with patch.object(extractor.scraper, 'fetch_content', return_value=real_content):
+        mock_llm.generate.return_value = mock_response
+        
+        result = extractor.extract("https://example.com/job")
+        
+        assert result == mock_response
+        assert len(result["responsibilities"]) >= 2
+        assert len(result["requirements"]) >= 2
+        assert len(result["technical_skills"]) >= 2
+        assert len(result["non_technical_skills"]) >= 2
+        assert len(result["ats_keywords"]) >= 2
+
+
+def test_extract_with_minimal_content(extractor, mock_llm):
+    """Test extraction with minimal job posting content."""
+    minimal_content = """
+    Job: Junior Developer
+    Company: StartUp Inc
+    
+    We need a junior developer.
+    
+    Must know Python and Git.
+    """
+    
+    mock_response = {
+        "company": "StartUp Inc",
+        "title": "Junior Developer",
+        "summary": "We need a junior developer.",
+        "responsibilities": [
+            "Develop software applications",
+            "Write and maintain code"
+        ],
+        "requirements": [
+            "Python knowledge",
+            "Git experience"
+        ],
+        "technical_skills": [
+            "Python",
+            "Git"
+        ],
+        "non_technical_skills": [
+            "Communication",
+            "Teamwork"
+        ],
+        "ats_keywords": [
+            "python",
+            "git",
+            "junior developer",
+            "software development"
+        ]
+    }
+    
+    with patch.object(extractor.scraper, 'fetch_content', return_value=minimal_content):
+        mock_llm.generate.return_value = mock_response
+        
+        result = extractor.extract("https://example.com/job")
+        
+        assert result == mock_response
+        assert len(result["responsibilities"]) >= 2
+        assert len(result["requirements"]) >= 2
+        assert len(result["technical_skills"]) >= 2
+        assert len(result["non_technical_skills"]) >= 2
+        assert len(result["ats_keywords"]) >= 2 
