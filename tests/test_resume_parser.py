@@ -5,7 +5,7 @@ import pytest
 import yaml
 from pathlib import Path
 
-from resume_tailor.core.resume_parser import (
+from resume_tailor.resume_parser import (
     InvalidYAMLError,
     MissingRequiredFieldError,
     ResumeParser,

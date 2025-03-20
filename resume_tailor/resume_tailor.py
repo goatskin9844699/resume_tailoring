@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, Protocol
 
 import yaml
-from resume_tailor.core.resume_parser import ResumeParser
-from resume_tailor.core.models import Resume
+from resume_tailor.resume_parser import ResumeParser
+from resume_tailor.models import Resume
 from resume_tailor.exceptions import InvalidOutputError
 
 

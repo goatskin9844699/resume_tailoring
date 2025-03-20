@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 # Import components to test
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
-from resume_tailor.core.resume_parser import ResumeParser
-from resume_tailor.core.resume_tailor import ResumeTailor
+from resume_tailor.resume_parser import ResumeParser
+from resume_tailor.resume_tailor import ResumeTailor
 from resume_tailor.llm.client import OpenRouterLLMClient
 
 def load_resume(resume_path: str) -> str:

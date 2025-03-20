@@ -4,11 +4,13 @@ Resume Tailor - A tool for tailoring resumes to job descriptions.
 
 __version__ = "0.1.0"
 
-from resume_tailor.core import (
+from resume_tailor.resume_parser import (
     ResumeParser,
     ResumeParserError,
     InvalidYAMLError,
     MissingRequiredFieldError,
+)
+from resume_tailor.resume_tailor import (
     ResumeTailor,
     ResumeTailorError,
     InvalidOutputError,

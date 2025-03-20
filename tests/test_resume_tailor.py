@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from resume_tailor.core.resume_tailor import ResumeTailor, InvalidOutputError
+from resume_tailor.resume_tailor import ResumeTailor, InvalidOutputError
 
 
 @pytest.fixture

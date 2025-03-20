@@ -10,9 +10,9 @@ from unittest.mock import Mock, patch
 from pathlib import Path
 import yaml
 
-from resume_tailor.core.models import Resume
+from resume_tailor.models import Resume
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
-from resume_tailor.core.resume_tailor import ResumeTailor
+from resume_tailor.resume_tailor import ResumeTailor
 from resume_tailor.llm.client import OpenRouterLLMClient
 from resume_tailor.exceptions import ExtractorError, TailorError, InvalidOutputError
 from resume_tailor.extractor.scraper import WebScraper
