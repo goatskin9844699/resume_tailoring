@@ -47,12 +47,33 @@ IMPORTANT FORMAT REQUIREMENTS:
 - For experience highlights, combine all details into single strings
 - Do not use nested structures in highlights
 
+BULLET POINT CRITERIA:
+- Each highlight must be based on what is mentioned in the original resume
+- Include how that experience demonstrates ability to perform job duties
+- Ensure ATS screening compatibility by including relevant keywords
+- Distinguish the resume by citing accomplishments and measurements of impact
+- Statements should not be too long and wordy, and SHOULD NOT repeat action verbs
+- Grammar, spelling, and sentence structure must be correct
+
+FRAMEWORK FOR EXPERIENCE HIGHLIGHTS:
+- Describe the SITUATION/TASK as a problem encountered
+- Describe the ACTION taken
+- Include analysis of opportunity, planning, preparation, and resources
+- Use action words and avoid words like "participated in" or "monitored"
+- Describe the RESULTS obtained
+- State if results were presented to clients or senior management
+
+ACTION VERB RULES:
+- Planning skills: Conceived, Formed, Planned, Created, Formulated, Projected, Designed, Initiated, Revised, Developed, Innovated, Scheduled, Devised, Instituted, Solved, Engineered, Invented, Systemized, Established, Justified, Tailored, Estimated, Organized, Transformed, Experimented, Originated
+- Directing employees: Administered, Determined, Ordered, Approved, Directed, Oversaw, Authorized, Guided, Prescribed, Conducted, Headed, Regulated, Controlled, Instructed, Specified, Decided, Led, Supervised, Delegated, Managed, Trained
+- Assuming responsibility: Achieved, Developed, Operated, Adopted, Doubled, Overcome, Arranged, Established, Performed, Assembled, Evaluated, Prepared, Assumed, Experienced, Produced, Attended, Gathered, Received, Audited, Halted, Reduced, Built, Handled, Reviewed, Checked, Improved, Simplified, Classified, Implemented, Sold, Collected, Initiated, Transacted, Compiled, Installed, Tripled, Constructed, Integrated
+
 Example of correct highlight format:
 education:
   - name: Computer Science
     school: Example University
-    startdate: 2018
-    enddate: 2022
+    startdate: "2018"
+    enddate: "2022"
     highlights:
       - "Thesis: Distributed Systems in Cloud Computing. Coursework: algorithms, distributed systems"
       - "GPA: 3.8"
@@ -61,8 +82,8 @@ experiences:
   - company: Example Corp
     location: San Francisco
     title: Software Engineer
-    startdate: 2022
-    enddate: Present
+    startdate: "2022"
+    enddate: "Present"
     highlights:
       - "Led development of key features and implemented CI/CD pipeline"
       - "Optimized database performance by 40%"
@@ -97,34 +118,92 @@ The output MUST follow these requirements:
 3. NOT start with a list item (-)
 4. NOT use a root-level key (like 'resume:')
 5. NOT use markdown formatting (no ```yaml or ```)
+6. Use proper indentation (2 spaces)
+7. All dates must be strings (e.g., "2023" not 2023)
+8. All lists must be properly indented under their parent key
+
+SECTION REQUIREMENTS:
+1. Education Section:
+   - Must contain only education entries
+   - Each entry MUST have: name, school, startdate, enddate
+   - Optional: highlights
+   - Example format:
+     education:
+       - name: "Computer Science"
+         school: "Example University"
+         startdate: "2018"
+         enddate: "2022"
+         highlights:
+           - "Thesis: Distributed Systems"
+
+2. Experiences Section:
+   - Must contain only work experience entries
+   - Each entry MUST have: company, title, startdate, enddate, highlights
+   - Optional: location
+   - Example format:
+     experiences:
+       - company: "Example Corp"
+         title: "Software Engineer"
+         startdate: "2022"
+         enddate: "Present"
+         highlights:
+           - "Led development of key features"
+
+3. Skills Section:
+   - Must contain only skill categories
+   - Each category MUST have: category, skills
+   - Example format:
+     skills:
+       - category: "Technical"
+         skills:
+           - "Python"
+           - "Django"
+
+4. Publications Section:
+   - Must contain only publication entries
+   - Each entry MUST have: authors, title, location, date
+   - Example format:
+     publications:
+       - authors: "John Doe, Jane Smith"
+         title: "Modern Web Development"
+         location: "Conference 2023"
+         date: "2023"
+
+IMPORTANT STRUCTURE RULES:
+- The root level must be a dictionary (no list items at root)
+- Each section (education, experiences, etc.) must be a list
+- List items must be indented with 2 spaces from their parent
+- All dates must be in quotes
+- All highlights must be strings, not dictionaries
+- DO NOT mix entries between sections (e.g., don't put experiences in education)
 
 Example of correct structure:
 basic:
   name: John Doe
   email: john@example.com
 education:
-  - name: Computer Science
-    school: Example University
-    startdate: 2018
-    enddate: 2022
+  - name: "Computer Science"
+    school: "Example University"
+    startdate: "2018"
+    enddate: "2022"
 experiences:
-  - company: Example Corp
-    location: San Francisco
-    title: Software Engineer
-    startdate: 2022
-    enddate: Present
+  - company: "Example Corp"
+    location: "San Francisco"
+    title: "Software Engineer"
+    startdate: "2022"
+    enddate: "Present"
     highlights:
       - "Led development of key features and implemented CI/CD pipeline"
 skills:
-  - category: Technical
+  - category: "Technical"
     skills:
-      - Python
-      - Django
-      - PostgreSQL
-  - category: Non-Technical
+      - "Python"
+      - "Django"
+      - "PostgreSQL"
+  - category: "Non-Technical"
     skills:
-      - Communication
-      - Leadership
+      - "Communication"
+      - "Leadership"
 publications:
   - authors: "John Doe, Jane Smith"
     title: "Modern Web Development Practices"
@@ -134,7 +213,7 @@ publications:
 Resume Content to Format:
 {content}
 
-Return ONLY the raw YAML content, no markdown formatting or other text.
+Return ONLY the raw YAML content, no markdown formatting or other text. Make sure to follow the structure exactly as shown in the example.
 """
 
     def __init__(self, llm_client: LLMClient) -> None:
