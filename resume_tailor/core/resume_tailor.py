@@ -1,9 +1,11 @@
 """Resume Tailor module for customizing resumes based on job descriptions."""
 
+from pathlib import Path
 from typing import Any, Dict, Protocol
 
 import yaml
 from resume_tailor.core.resume_parser import ResumeParser
+from resume_tailor.core.models import Resume
 
 
 class LLMClient(Protocol):
@@ -72,14 +74,14 @@ Return ONLY the YAML content, no other text.
         """
         self.llm_client = llm_client
 
-    def _validate_yaml(self, yaml_str: str) -> Dict[str, Any]:
+    def _validate_yaml(self, yaml_str: str) -> Resume:
         """Validate YAML content.
 
         Args:
             yaml_str: YAML content to validate.
 
         Returns:
-            Dict containing the parsed YAML data.
+            Resume object containing the parsed data.
 
         Raises:
             InvalidOutputError: If the YAML is invalid.
@@ -88,11 +90,11 @@ Return ONLY the YAML content, no other text.
             data = yaml.safe_load(yaml_str)
             if not isinstance(data, dict):
                 raise InvalidOutputError("YAML must contain a dictionary at the root level")
-            return data
+            return Resume(**data)
         except yaml.YAMLError as e:
             raise InvalidOutputError(f"Invalid YAML syntax: {str(e)}")
 
-    def tailor(self, job_description: str, resume_yaml: str) -> Dict[str, Any]:
+    def tailor(self, job_description: str, resume_yaml: str) -> Resume:
         """Tailor the resume for a specific job description.
 
         Args:
@@ -100,7 +102,7 @@ Return ONLY the YAML content, no other text.
             resume_yaml: The master resume in YAML format.
 
         Returns:
-            Dict containing the tailored resume data.
+            Resume object containing the tailored resume data.
 
         Raises:
             InvalidOutputError: If the LLM output is invalid.
@@ -127,6 +129,22 @@ Return ONLY the YAML content, no other text.
             raise
         except Exception as e:
             raise InvalidOutputError("Failed to generate tailored resume")
+
+    def save_tailored_resume(self, resume: Resume, file_path: str) -> None:
+        """Save a tailored resume to a YAML file.
+
+        Args:
+            resume: Resume object to save
+            file_path: Path where to save the YAML file
+
+        Raises:
+            InvalidOutputError: If there's an error saving the file
+        """
+        try:
+            with open(file_path, 'w') as f:
+                yaml.dump(resume.model_dump(), f, default_flow_style=False)
+        except Exception as e:
+            raise InvalidOutputError(f"Failed to save resume: {str(e)}")
 
 
 __all__ = [

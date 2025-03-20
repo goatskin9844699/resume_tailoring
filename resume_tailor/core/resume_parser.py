@@ -7,6 +7,8 @@ import yaml
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
 
+from .models import Resume
+
 
 class ResumeParserError(Exception):
     """Base exception for Resume Parser errors."""
@@ -48,11 +50,11 @@ class ResumeParser:
         if not self.file_path.exists():
             raise FileNotFoundError(f"Resume file not found: {file_path}")
 
-    def parse(self) -> Dict[str, Any]:
+    def parse(self) -> Resume:
         """Parse and validate the resume YAML file.
 
         Returns:
-            Dict containing the parsed resume data.
+            Resume object containing the parsed resume data.
 
         Raises:
             InvalidYAMLError: If YAML syntax is invalid.
@@ -68,7 +70,7 @@ class ResumeParser:
             raise InvalidYAMLError("YAML must contain a dictionary at the root level")
 
         self._validate_required_fields(data)
-        return data
+        return Resume(**data)
 
     def _validate_required_fields(self, data: Dict[str, Any]) -> None:
         """Validate that all required fields are present.

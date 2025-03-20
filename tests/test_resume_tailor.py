@@ -1,39 +1,34 @@
-"""Unit tests for the Resume Tailor module."""
+"""Test resume tailor."""
 
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock
+import yaml
 
-from resume_tailor import ResumeTailor, InvalidOutputError
+from resume_tailor.core.resume_tailor import ResumeTailor, InvalidOutputError
 
 
 @pytest.fixture
-def mock_llm_client():
+def mock_llm_client(mocker):
     """Create a mock LLM client."""
-    client = MagicMock()
-    client.generate.return_value = {"content": "basic:\n  name: John Doe\n  email: john@example.com"}
-    return client
+    return mocker.Mock()
 
 
 @pytest.fixture
 def sample_job_description():
-    """Sample job description for testing."""
+    """Create a sample job description."""
     return """
 Senior Software Engineer - Python Backend
 
-We are looking for a Senior Software Engineer with strong Python experience to join our backend team. The ideal candidate will have:
+We are looking for a Senior Software Engineer with strong Python experience to join our team.
 
-- 5+ years of experience in Python development
-- Experience with microservices architecture
-- Strong background in API development
-- Experience with AWS and cloud infrastructure
-- Track record of mentoring junior developers
-- Experience with automated testing and CI/CD
+Requirements:
+- 5+ years of Python development
+- Experience with web frameworks
+- Strong understanding of software design patterns
+- Focus on code quality and testing
 
 Responsibilities:
-- Design and implement scalable backend services
-- Lead technical projects and mentor team members
-- Improve system reliability and performance
+- Design and implement backend services
+- Optimize for reliability and performance
 - Implement automated testing and deployment
 - Collaborate with cross-functional teams
 """
@@ -41,36 +36,89 @@ Responsibilities:
 
 @pytest.fixture
 def sample_resume_yaml():
-    """Sample resume YAML for testing."""
-    return """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc Computer Science
-    school: Example University
-    startdate: 09/2015
-    enddate: 06/2017
-experiences:
-  - company: TechCorp
-    titles:
-      - name: Senior Engineer
-        startdate: 01/2020
-        enddate: present
-    highlights:
-      - Led development team
-      - Implemented CI/CD pipeline
-      - Optimized database performance
-"""
+    """Create a sample resume in YAML format."""
+    resume_data = {
+        "basic": {
+            "name": "John Doe",
+            "email": "john@example.com",
+        },
+        "education": [
+            {
+                "name": "MSc Computer Science",
+                "school": "Example University",
+                "startdate": "09/2015",
+                "enddate": "06/2017",
+                "highlights": ["GPA: 3.8"],
+            }
+        ],
+        "experiences": [
+            {
+                "company": "TechCorp",
+                "skip_name": False,
+                "location": "San Francisco",
+                "titles": [
+                    {
+                        "name": "Senior Engineer",
+                        "startdate": "01/2018",
+                        "enddate": "Present",
+                    }
+                ],
+                "highlights": [
+                    "Led development team",
+                    "Implemented CI/CD pipeline",
+                    "Optimized database performance",
+                ],
+            }
+        ],
+    }
+    return yaml.dump(resume_data)
 
 
 def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_yaml):
     """Test tailoring a resume with a job description."""
+    # Create mock response
+    mock_response = {
+        "basic": {
+            "name": "John Doe",
+            "email": "john@example.com",
+        },
+        "education": [
+            {
+                "name": "MSc Computer Science",
+                "school": "Example University",
+                "startdate": "09/2015",
+                "enddate": "06/2017",
+                "highlights": ["GPA: 3.8"],
+            }
+        ],
+        "experiences": [
+            {
+                "company": "TechCorp",
+                "skip_name": False,
+                "location": "San Francisco",
+                "titles": [
+                    {
+                        "name": "Senior Engineer",
+                        "startdate": "01/2018",
+                        "enddate": "Present",
+                    }
+                ],
+                "highlights": [
+                    "Led Python development team",
+                    "Implemented automated testing",
+                    "Optimized backend services",
+                ],
+            }
+        ],
+    }
+    mock_llm_client.generate.return_value = {"content": yaml.dump(mock_response)}
+
     tailor = ResumeTailor(mock_llm_client)
     result = tailor.tailor(sample_job_description, sample_resume_yaml)
-    assert isinstance(result, dict)
-    assert "basic" in result
-    assert result["basic"]["name"] == "John Doe"
+
+    assert result.basic["name"] == "John Doe"
+    assert len(result.experiences) == 1
+    assert "Python" in result.experiences[0].highlights[0]
 
 
 def test_tailor_resume_invalid_yaml(mock_llm_client, sample_job_description, sample_resume_yaml):

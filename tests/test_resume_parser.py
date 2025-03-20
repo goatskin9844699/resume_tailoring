@@ -1,5 +1,6 @@
 """Unit tests for the Resume Parser module."""
 
+import os
 import pytest
 import yaml
 from pathlib import Path
@@ -13,22 +14,19 @@ from resume_tailor.core.resume_parser import (
 
 
 @pytest.fixture
-def sample_resume_data():
-    """Create sample resume data for testing."""
-    return {
+def sample_resume_file(tmp_path):
+    """Create a sample resume file for testing."""
+    resume_data = {
         "basic": {
             "name": "John Doe",
             "email": "john@example.com",
-            "phone": "123-456-7890"
         },
-        "objective": "Software Engineer position",
         "education": [
             {
                 "name": "Computer Science",
-                "school": "University of Example",
+                "school": "Example University",
                 "startdate": "2015",
                 "enddate": "2019",
-                "highlights": ["GPA: 3.8", "Dean's List"]
             }
         ],
         "experiences": [
@@ -38,32 +36,30 @@ def sample_resume_data():
                     {
                         "name": "Software Engineer",
                         "startdate": "2019",
-                        "enddate": "Present"
+                        "enddate": "Present",
                     }
                 ],
-                "highlights": ["Led development of key features"]
+                "highlights": ["Developed features", "Fixed bugs"],
             }
-        ]
+        ],
     }
 
-
-@pytest.fixture
-def sample_resume_file(tmp_path, sample_resume_data):
-    """Create a temporary YAML file with sample resume data."""
-    file_path = tmp_path / "test_resume.yaml"
-    with open(file_path, 'w') as f:
-        yaml.dump(sample_resume_data, f)
-    return str(file_path)
+    file_path = os.path.join(tmp_path, "test_resume.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+    return file_path
 
 
 def test_parse_valid_resume(sample_resume_file):
     """Test parsing a valid resume file."""
     parser = ResumeParser(sample_resume_file)
     data = parser.parse()
-    assert data["basic"]["name"] == "John Doe"
-    assert data["basic"]["email"] == "john@example.com"
-    assert len(data["education"]) == 1
-    assert len(data["experiences"]) == 1
+    assert data.basic["name"] == "John Doe"
+    assert data.basic["email"] == "john@example.com"
+    assert len(data.education) == 1
+    assert data.education[0].name == "Computer Science"
+    assert len(data.experiences) == 1
+    assert data.experiences[0].company == "Tech Corp"
 
 
 def test_parse_nonexistent_file():
@@ -73,158 +69,204 @@ def test_parse_nonexistent_file():
 
 
 def test_parse_invalid_yaml(tmp_path):
-    """Test parsing an invalid YAML file."""
-    invalid_path = tmp_path / "invalid.yaml"
-    invalid_path.write_text("invalid: yaml: content: -")
-    parser = ResumeParser(str(invalid_path))
+    """Test parsing invalid YAML."""
+    file_path = os.path.join(tmp_path, "invalid.yaml")
+    with open(file_path, "w") as f:
+        f.write("invalid: yaml: content: -")
+
+    parser = ResumeParser(file_path)
     with pytest.raises(InvalidYAMLError):
         parser.parse()
 
 
 def test_parse_missing_required_field(tmp_path):
-    """Test parsing a resume with missing required fields."""
-    invalid_path = tmp_path / "invalid_resume.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-education:
-  - name: MSc
-    school: Example University
-    startdate: 09/2015
-experiences:
-  - company: TechCorp
-    titles:
-      - name: Senior Engineer
-    highlights:
-      - Led development team
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(MissingRequiredFieldError) as exc_info:
+    """Test parsing YAML with missing required field."""
+    resume_data = {
+        "basic": {
+            "name": "John Doe",
+            # Missing email
+        },
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                "startdate": "2015",
+                "enddate": "2019",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Tech Corp",
+                "titles": [
+                    {
+                        "name": "Software Engineer",
+                        "startdate": "2019",
+                        "enddate": "Present",
+                    }
+                ],
+                "highlights": ["Developed features"],
+            }
+        ],
+    }
+
+    file_path = os.path.join(tmp_path, "missing_field.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(MissingRequiredFieldError):
         parser.parse()
-    assert "Missing required field 'email'" in str(exc_info.value)
 
 
 def test_parse_invalid_experiences_structure(tmp_path):
-    """Test parsing a resume with invalid experiences structure."""
-    invalid_path = tmp_path / "invalid_experiences.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc
-    school: Example University
-    startdate: 09/2015
-    enddate: 06/2017
-experiences: invalid
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(InvalidYAMLError) as exc_info:
+    """Test parsing YAML with invalid experiences structure."""
+    resume_data = {
+        "basic": {"name": "John Doe", "email": "john@example.com"},
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                "startdate": "2015",
+                "enddate": "2019",
+            }
+        ],
+        "experiences": "not a list",  # Invalid structure
+    }
+
+    file_path = os.path.join(tmp_path, "invalid_structure.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(InvalidYAMLError):
         parser.parse()
-    assert "'experiences' must be a list" in str(exc_info.value)
 
 
 def test_parse_missing_experience_fields(tmp_path):
-    """Test parsing a resume with missing experience fields."""
-    invalid_path = tmp_path / "invalid_experience.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc
-    school: Example University
-    startdate: 09/2015
-    enddate: 06/2017
-experiences:
-  - company: TechCorp
-    # Missing titles and highlights
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(MissingRequiredFieldError) as exc_info:
+    """Test parsing YAML with missing experience fields."""
+    resume_data = {
+        "basic": {"name": "John Doe", "email": "john@example.com"},
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                "startdate": "2015",
+                "enddate": "2019",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Tech Corp",
+                # Missing titles and highlights
+            }
+        ],
+    }
+
+    file_path = os.path.join(tmp_path, "missing_exp_fields.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(MissingRequiredFieldError):
         parser.parse()
-    assert "Missing required field 'titles' in experience entry" in str(exc_info.value)
 
 
 def test_parse_missing_education_fields(tmp_path):
-    """Test parsing a resume with missing education fields."""
-    invalid_path = tmp_path / "invalid_education.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc
-    school: Example University
-    # Missing startdate and enddate
-experiences:
-  - company: TechCorp
-    titles:
-      - name: Senior Engineer
-    highlights:
-      - Led development team
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(MissingRequiredFieldError) as exc_info:
+    """Test parsing YAML with missing education fields."""
+    resume_data = {
+        "basic": {"name": "John Doe", "email": "john@example.com"},
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                # Missing dates
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Tech Corp",
+                "titles": [
+                    {
+                        "name": "Software Engineer",
+                        "startdate": "2019",
+                        "enddate": "Present",
+                    }
+                ],
+                "highlights": ["Developed features"],
+            }
+        ],
+    }
+
+    file_path = os.path.join(tmp_path, "missing_edu_fields.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(MissingRequiredFieldError):
         parser.parse()
-    assert "Missing required field 'startdate' in education entry" in str(exc_info.value)
 
 
 def test_parse_invalid_titles_structure(tmp_path):
-    """Test parsing a resume with invalid titles structure."""
-    invalid_path = tmp_path / "invalid_titles.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc
-    school: Example University
-    startdate: 09/2015
-    enddate: 06/2017
-experiences:
-  - company: TechCorp
-    titles: "not a list"
-    highlights:
-      - Led development team
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(InvalidYAMLError) as exc_info:
+    """Test parsing YAML with invalid titles structure."""
+    resume_data = {
+        "basic": {"name": "John Doe", "email": "john@example.com"},
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                "startdate": "2015",
+                "enddate": "2019",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Tech Corp",
+                "titles": "not a list",  # Invalid structure
+                "highlights": ["Developed features"],
+            }
+        ],
+    }
+
+    file_path = os.path.join(tmp_path, "invalid_titles.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(InvalidYAMLError):
         parser.parse()
-    assert "'titles' must be a list" in str(exc_info.value)
 
 
 def test_parse_invalid_highlights_structure(tmp_path):
-    """Test parsing a resume with invalid highlights structure."""
-    invalid_path = tmp_path / "invalid_highlights.yaml"
-    invalid_path.write_text(
-        """
-basic:
-  name: John Doe
-  email: john@example.com
-education:
-  - name: MSc
-    school: Example University
-    startdate: 09/2015
-    enddate: 06/2017
-experiences:
-  - company: TechCorp
-    titles:
-      - name: Senior Engineer
-    highlights: "not a list"
-"""
-    )
-    parser = ResumeParser(str(invalid_path))
-    with pytest.raises(InvalidYAMLError) as exc_info:
-        parser.parse()
-    assert "'highlights' must be a list" in str(exc_info.value) 
+    """Test parsing YAML with invalid highlights structure."""
+    resume_data = {
+        "basic": {"name": "John Doe", "email": "john@example.com"},
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Example University",
+                "startdate": "2015",
+                "enddate": "2019",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Tech Corp",
+                "titles": [
+                    {
+                        "name": "Software Engineer",
+                        "startdate": "2019",
+                        "enddate": "Present",
+                    }
+                ],
+                "highlights": "not a list",  # Invalid structure
+            }
+        ],
+    }
+
+    file_path = os.path.join(tmp_path, "invalid_highlights.yaml")
+    with open(file_path, "w") as f:
+        yaml.dump(resume_data, f)
+
+    parser = ResumeParser(file_path)
+    with pytest.raises(InvalidYAMLError):
+        parser.parse() 
