@@ -92,6 +92,8 @@ The output MUST follow these requirements:
    - basic: Dictionary containing basic information
    - education: List of education entries
    - experiences: List of work experiences
+   - skills: List of skill categories (each with category and skills fields)
+   - publications: List of publication entries (each with authors, title, location, and date)
 3. NOT start with a list item (-)
 4. NOT use a root-level key (like 'resume:')
 5. NOT use markdown formatting (no ```yaml or ```)
@@ -113,6 +115,21 @@ experiences:
     enddate: Present
     highlights:
       - "Led development of key features and implemented CI/CD pipeline"
+skills:
+  - category: Technical
+    skills:
+      - Python
+      - Django
+      - PostgreSQL
+  - category: Non-Technical
+    skills:
+      - Communication
+      - Leadership
+publications:
+  - authors: "John Doe, Jane Smith"
+    title: "Modern Web Development Practices"
+    location: "Conference: WebDev Conference 2023, San Francisco, USA"
+    date: "2023"
 
 Resume Content to Format:
 {content}
@@ -168,6 +185,11 @@ Return ONLY the raw YAML content, no markdown formatting or other text.
             data = yaml.safe_load(cleaned_yaml)
             if not isinstance(data, dict):
                 raise InvalidOutputError("YAML must contain a dictionary at the root level")
+            
+            # Validate skills structure
+            if "skills" in data and not isinstance(data["skills"], list):
+                raise InvalidOutputError("'skills' must be a list of skill categories")
+            
             return Resume(**data)
         except yaml.YAMLError as e:
             raise InvalidOutputError(f"Invalid YAML syntax: {str(e)}")
