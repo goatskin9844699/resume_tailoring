@@ -24,13 +24,21 @@ def mock_response():
             <style>body { color: red; }</style>
         </head>
         <body>
-            <h1>Job Title</h1>
-            <p>Job Description</p>
-            <div>Requirements:</div>
-            <ul>
-                <li>Requirement 1</li>
-                <li>Requirement 2</li>
-            </ul>
+            <main>
+                <h1>Job Title</h1>
+                <p>Job Description</p>
+                <h2>Requirements</h2>
+                <ul>
+                    <li>Requirement 1</li>
+                    <li>Requirement 2</li>
+                </ul>
+                <h2>Responsibilities</h2>
+                <p>Main responsibilities:</p>
+                <ul>
+                    <li>Responsibility 1</li>
+                    <li>Responsibility 2</li>
+                </ul>
+            </main>
         </body>
     </html>
     """
@@ -48,11 +56,17 @@ def test_fetch_content_success(scraper, mock_response):
     with patch('requests.Session.get', return_value=mock_response):
         content = scraper.fetch_content('https://example.com/job')
         
-        # Check that content is cleaned
+        # Check that content is structured
         assert 'Job Title' in content
         assert 'Job Description' in content
-        assert 'Requirement 1' in content
-        assert 'Requirement 2' in content
+        assert 'Requirements' in content
+        assert 'Responsibilities' in content
+        assert '- Requirement 1' in content
+        assert '- Requirement 2' in content
+        assert '- Responsibility 1' in content
+        assert '- Responsibility 2' in content
+        assert 'Main responsibilities:' in content
+        
         # Check that script and style are removed
         assert 'console.log' not in content
         assert 'color: red' not in content
@@ -86,6 +100,7 @@ def test_fetch_content_parser_fallback(scraper, mock_response):
             content = scraper.fetch_content('https://example.com/job')
             assert 'Job Title' in content
             assert 'Job Description' in content
+            assert 'Requirements' in content
 
 
 def test_fetch_content_all_parsers_fail(scraper):
@@ -96,4 +111,30 @@ def test_fetch_content_all_parsers_fail(scraper):
     with patch('requests.Session.get', return_value=mock_response):
         with patch('bs4.BeautifulSoup', side_effect=Exception('Parser error')):
             with pytest.raises(ExtractorError, match="Failed to parse HTML with any parser"):
-                scraper.fetch_content('https://example.com/job') 
+                scraper.fetch_content('https://example.com/job')
+
+
+def test_fetch_content_without_main_tag(scraper):
+    """Test content extraction without main tag."""
+    mock_response = MagicMock()
+    mock_response.text = """
+    <html>
+        <body>
+            <h1>Job Title</h1>
+            <p>Job Description</p>
+            <h2>Requirements</h2>
+            <ul>
+                <li>Requirement 1</li>
+                <li>Requirement 2</li>
+            </ul>
+        </body>
+    </html>
+    """
+    
+    with patch('requests.Session.get', return_value=mock_response):
+        content = scraper.fetch_content('https://example.com/job')
+        assert 'Job Title' in content
+        assert 'Job Description' in content
+        assert 'Requirements' in content
+        assert '- Requirement 1' in content
+        assert '- Requirement 2' in content 
