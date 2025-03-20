@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from resume_tailor.llm.client import OpenRouterLLMClient, LLMError
+from langchain_core.messages import AIMessage
 
 
 @pytest.fixture
@@ -46,30 +47,28 @@ def test_init_no_api_key():
             OpenRouterLLMClient()
 
 
-@patch("requests.post")
-def test_generate_success(mock_post, client, mock_response):
+@patch("langchain_openai.ChatOpenAI")
+def test_generate_success(mock_chat_openai, client, mock_response):
     """Test successful response generation."""
-    mock_post.return_value = MagicMock(
-        json=lambda: mock_response,
-        raise_for_status=lambda: None
-    )
+    mock_instance = MagicMock()
+    mock_instance.invoke.return_value = AIMessage(content="Test response")
+    mock_chat_openai.return_value = mock_instance
     
+    client.chat = mock_instance
     response = client.generate("Test prompt")
+    
     assert response == mock_response
-    
-    mock_post.assert_called_once()
-    call_args = mock_post.call_args
-    assert call_args[0][0] == "https://openrouter.ai/api/v1/chat/completions"
-    assert call_args[1]["headers"]["Authorization"] == "Bearer test_key"
-    assert call_args[1]["json"]["model"] == "deepseek/deepseek-r1:free"
-    assert call_args[1]["json"]["messages"] == [{"role": "user", "content": "Test prompt"}]
+    mock_instance.invoke.assert_called_once()
 
 
-@patch("requests.post")
-def test_generate_request_error(mock_post, client):
+@patch("langchain_openai.ChatOpenAI")
+def test_generate_request_error(mock_chat_openai, client):
     """Test error handling during request."""
-    mock_post.side_effect = Exception("Network error")
+    mock_instance = MagicMock()
+    mock_instance.invoke.side_effect = Exception("Network error")
+    mock_chat_openai.return_value = mock_instance
     
+    client.chat = mock_instance
     with pytest.raises(LLMError, match="Failed to communicate with OpenRouter"):
         client.generate("Test prompt")
 
