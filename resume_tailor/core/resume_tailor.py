@@ -6,6 +6,7 @@ from typing import Any, Dict, Protocol
 import yaml
 from resume_tailor.core.resume_parser import ResumeParser
 from resume_tailor.core.models import Resume
+from resume_tailor.exceptions import InvalidOutputError
 
 
 class LLMClient(Protocol):
@@ -25,12 +26,6 @@ class LLMClient(Protocol):
 
 class ResumeTailorError(Exception):
     """Base exception for Resume Tailor errors."""
-
-    pass
-
-
-class InvalidOutputError(ResumeTailorError):
-    """Raised when the LLM output is invalid."""
 
     pass
 
