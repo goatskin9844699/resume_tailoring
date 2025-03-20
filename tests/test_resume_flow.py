@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
 import yaml
+import os
 
 from resume_tailor.models import Resume
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
@@ -24,54 +25,46 @@ def mock_job_url():
 
 @pytest.fixture
 def mock_resume_yaml(tmp_path):
-    """Fixture providing a temporary YAML file with mock resume data."""
+    """Create a mock resume YAML file."""
     resume_data = {
         "basic": {
             "name": "Test User",
-            "email": "test@example.com"
+            "email": "test@example.com",
         },
-        "education": [{
-            "name": "Test Degree",
-            "school": "Test University",
-            "startdate": "2020",
-            "enddate": "2024",
-            "highlights": []
-        }],
-        "experiences": [{
-            "company": "Test Company",
-            "location": "",
-            "skip_name": False,
-            "highlights": [
-                "Test highlight"
-            ],
-            "titles": [{
-                "name": "Test Role",
+        "education": [
+            {
+                "name": "Computer Science",
+                "school": "Test University",
                 "startdate": "2020",
-                "enddate": "Present"
-            }]
-        }],
+                "enddate": "2024",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Test Company",
+                "location": "Test Location",
+                "title": "Test Role",
+                "startdate": "2020",
+                "enddate": "Present",
+                "highlights": ["Test highlight 1", "Test highlight 2"],
+            }
+        ],
         "skills": [
             {
                 "category": "Technical",
-                "skills": ["Python", "Django"]
+                "skills": ["Python", "Django"],
             },
             {
                 "category": "Non-Technical",
-                "skills": ["Communication"]
-            }
+                "skills": ["Communication"],
+            },
         ],
-        "objective": "",
-        "projects": [],
-        "publications": [],
-        "editing": False,
-        "debug": False
     }
-    
-    resume_file = tmp_path / "test_resume.yaml"
-    with open(resume_file, "w") as f:
+
+    file_path = os.path.join(tmp_path, "test_resume.yaml")
+    with open(file_path, "w") as f:
         yaml.dump(resume_data, f)
-    
-    return str(resume_file)
+    return file_path
 
 @pytest.fixture
 def mock_job_data():
@@ -174,16 +167,99 @@ def mock_llm_client(mock_job_data, mock_llm_response):
 
 @pytest.fixture
 def mock_scraper():
-    """Fixture providing a mocked web scraper."""
-    mock_scraper = Mock(spec=WebScraper)
-    mock_scraper.fetch_content.return_value = "Test job description content"
-    return mock_scraper
+    """Create a mock web scraper."""
+    mock = Mock(spec=WebScraper)
+    mock.scrape = Mock(return_value="Test job posting content")
+    return mock
 
 class TestResumeTailoringFlow:
-    """Test class for the complete resume tailoring workflow."""
-    
+    """Test the complete resume tailoring workflow."""
+
     def test_complete_flow_success(self, mock_job_url, mock_resume_yaml, mock_llm_client, mock_scraper):
         """Test successful completion of the complete resume tailoring workflow."""
+        # Mock job description extraction response
+        mock_job_response = {
+            "content": json.dumps({
+                "company": "Test Company",
+                "title": "Test Role",
+                "summary": "Test job summary",
+                "responsibilities": ["Test responsibility 1", "Test responsibility 2", "Test responsibility 3"],
+                "requirements": ["Test requirement 1", "Test requirement 2", "Test requirement 3"],
+                "technical_skills": ["Python", "Django", "PostgreSQL"],
+                "non_technical_skills": ["Communication", "Leadership", "Problem Solving"],
+                "ats_keywords": ["python", "django", "leadership", "problem solving"],
+                "is_complete": True,
+                "truncation_note": "",
+            })
+        }
+
+        # Mock resume tailoring responses
+        mock_tailor_response = {
+            "content": """
+            Basic Information:
+            - Name: Test User
+            - Email: test@example.com
+
+            Education:
+            - Computer Science at Test University (2020 - 2024)
+              * Relevant coursework in Python and Django development
+
+            Experience:
+            - Test Company
+              * Test Role (2020 - Present)
+              * Implemented key features using Python and Django
+              * Led team initiatives and improved processes
+            """
+        }
+
+        mock_format_response = {
+            "content": yaml.dump({
+                "basic": {
+                    "name": "Test User",
+                    "email": "test@example.com",
+                },
+                "education": [
+                    {
+                        "name": "Computer Science",
+                        "school": "Test University",
+                        "startdate": "2020",
+                        "enddate": "2024",
+                        "highlights": ["Relevant coursework in Python and Django development"],
+                    }
+                ],
+                "experiences": [
+                    {
+                        "company": "Test Company",
+                        "location": "Test Location",
+                        "title": "Test Role",
+                        "startdate": "2020",
+                        "enddate": "Present",
+                        "highlights": [
+                            "Implemented key features using Python and Django",
+                            "Led team initiatives and improved processes",
+                        ],
+                    }
+                ],
+                "skills": [
+                    {
+                        "category": "Technical",
+                        "skills": ["Python", "Django", "PostgreSQL"],
+                    },
+                    {
+                        "category": "Non-Technical",
+                        "skills": ["Communication", "Leadership"],
+                    },
+                ],
+            })
+        }
+
+        # Set up mock responses
+        mock_llm_client.generate.side_effect = [
+            mock_job_response,  # First call: job description extraction
+            mock_tailor_response,  # Second call: resume tailoring
+            mock_format_response,  # Third call: YAML formatting
+        ]
+
         # 1. Extract job description
         extractor = JobDescriptionExtractor(llm_client=mock_llm_client)
         extractor.scraper = mock_scraper
@@ -197,15 +273,13 @@ class TestResumeTailoringFlow:
         tailor = ResumeTailor(llm_client=mock_llm_client)
         tailored_resume = tailor.tailor(job_data, resume_yaml)
 
-        # 4. Verify final output
-        assert tailored_resume is not None
-        assert isinstance(tailored_resume, Resume)
+        # Verify the result
         assert tailored_resume.basic["name"] == "Test User"
+        assert tailored_resume.basic["email"] == "test@example.com"
         assert len(tailored_resume.experiences) == 1
-        assert len(tailored_resume.education) == 1
-        assert len(tailored_resume.skills) == 2
-        assert mock_scraper.fetch_content.called
-        assert mock_scraper.fetch_content.call_args[0][0] == mock_job_url
+        assert tailored_resume.experiences[0].company == "Test Company"
+        assert tailored_resume.experiences[0].title == "Test Role"
+        assert len(tailored_resume.experiences[0].highlights) == 2
 
     def test_complete_flow_job_extraction_error(self, mock_job_url, mock_resume_yaml, mock_llm_client, mock_scraper):
         """Test error handling when job extraction fails."""

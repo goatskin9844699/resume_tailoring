@@ -36,42 +36,37 @@ Responsibilities:
 
 @pytest.fixture
 def sample_resume_yaml():
-    """Create a sample resume in YAML format."""
-    resume_data = {
-        "basic": {
-            "name": "John Doe",
-            "email": "john@example.com",
-        },
-        "education": [
-            {
-                "name": "MSc Computer Science",
-                "school": "Example University",
-                "startdate": "09/2015",
-                "enddate": "06/2017",
-                "highlights": ["GPA: 3.8"],
-            }
-        ],
-        "experiences": [
-            {
-                "company": "TechCorp",
-                "skip_name": False,
-                "location": "San Francisco",
-                "titles": [
-                    {
-                        "name": "Senior Engineer",
-                        "startdate": "01/2018",
-                        "enddate": "Present",
-                    }
-                ],
-                "highlights": [
-                    "Led development team",
-                    "Implemented CI/CD pipeline",
-                    "Optimized database performance",
-                ],
-            }
-        ],
-    }
-    return yaml.dump(resume_data)
+    """Fixture providing sample resume YAML content."""
+    return """
+basic:
+  email: john@example.com
+  name: John Doe
+education:
+- enddate: 06/2017
+  name: MSc Computer Science
+  school: Example University
+  startdate: 09/2015
+  highlights:
+  - 'GPA: 3.8'
+experiences:
+- company: TechCorp
+  location: San Francisco
+  title: Senior Engineer
+  startdate: 01/2018
+  enddate: Present
+  highlights:
+  - Led Python development team
+  - Implemented automated testing
+  - Optimized backend services
+skills:
+- category: Technical
+  skills:
+  - Python
+  - Django
+- category: Non-Technical
+  skills:
+  - Communication
+"""
 
 
 def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_yaml):
@@ -81,11 +76,11 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
     Basic Information:
     - Name: John Doe
     - Email: john@example.com
-    
+
     Education:
     - MSc Computer Science at Example University (09/2015 - 06/2017)
       * GPA: 3.8
-    
+
     Experience:
     - TechCorp (San Francisco)
       * Senior Engineer (01/2018 - Present)
@@ -93,7 +88,7 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
       * Implemented automated testing
       * Optimized backend services
     """
-    
+
     formatted_yaml = {
         "basic": {
             "name": "John Doe",
@@ -111,15 +106,10 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
         "experiences": [
             {
                 "company": "TechCorp",
-                "skip_name": False,
                 "location": "San Francisco",
-                "titles": [
-                    {
-                        "name": "Senior Engineer",
-                        "startdate": "01/2018",
-                        "enddate": "Present",
-                    }
-                ],
+                "title": "Senior Engineer",
+                "startdate": "01/2018",
+                "enddate": "Present",
                 "highlights": [
                     "Led Python development team",
                     "Implemented automated testing",
@@ -128,7 +118,7 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
             }
         ],
     }
-    
+
     # Set up mock responses for both steps
     mock_llm_client.generate.side_effect = [
         {"content": tailored_content},  # First call: tailoring
@@ -138,9 +128,13 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
     tailor = ResumeTailor(mock_llm_client)
     result = tailor.tailor(sample_job_description, sample_resume_yaml)
 
+    # Verify the result
     assert result.basic["name"] == "John Doe"
+    assert result.basic["email"] == "john@example.com"
     assert len(result.experiences) == 1
-    assert "Python" in result.experiences[0].highlights[0]
+    assert result.experiences[0].company == "TechCorp"
+    assert result.experiences[0].title == "Senior Engineer"
+    assert len(result.experiences[0].highlights) == 3
     
     # Verify both steps were called
     assert mock_llm_client.generate.call_count == 2
