@@ -1,6 +1,5 @@
 """Resume Tailor module for customizing resumes based on job descriptions."""
 
-import logging
 from pathlib import Path
 from typing import Any, Dict, Protocol
 
@@ -8,9 +7,6 @@ import yaml
 from resume_tailor.resume_parser import ResumeParser
 from resume_tailor.models import Resume
 from resume_tailor.exceptions import InvalidOutputError
-
-# Set up logging
-logger = logging.getLogger(__name__)
 
 
 class LLMClient(Protocol):
@@ -41,8 +37,15 @@ class ResumeTailor:
 You will be provided with a master resume in YAML format and a job description.
 Your goal is to create a tailored version of the resume that:
 1. Highlights experiences and skills most relevant to the job
-2. Uses professional language
-3. Optimizes content for ATS systems
+2. Preserves all required fields (basic info, education, etc.)
+3. Uses professional language
+4. Optimizes content for ATS systems
+
+IMPORTANT FORMAT REQUIREMENTS:
+- All highlights MUST be simple strings, not dictionaries
+- For education highlights, combine thesis and coursework into single strings
+- For experience highlights, combine all details into single strings
+- Do not use nested structures in highlights
 
 BULLET POINT CRITERIA:
 - Each highlight must be based on what is mentioned in the original resume
@@ -65,6 +68,26 @@ ACTION VERB RULES:
 - Directing employees: Administered, Determined, Ordered, Approved, Directed, Oversaw, Authorized, Guided, Prescribed, Conducted, Headed, Regulated, Controlled, Instructed, Specified, Decided, Led, Supervised, Delegated, Managed, Trained
 - Assuming responsibility: Achieved, Developed, Operated, Adopted, Doubled, Overcome, Arranged, Established, Performed, Assembled, Evaluated, Prepared, Assumed, Experienced, Produced, Attended, Gathered, Received, Audited, Halted, Reduced, Built, Handled, Reviewed, Checked, Improved, Simplified, Classified, Implemented, Sold, Collected, Initiated, Transacted, Compiled, Installed, Tripled, Constructed, Integrated
 
+Example of correct highlight format:
+education:
+  - name: Computer Science
+    school: Example University
+    startdate: "2018"
+    enddate: "2022"
+    highlights:
+      - "Thesis: Distributed Systems in Cloud Computing. Coursework: algorithms, distributed systems"
+      - "GPA: 3.8"
+
+experiences:
+  - company: Example Corp
+    location: San Francisco
+    title: Software Engineer
+    startdate: "2022"
+    enddate: "Present"
+    highlights:
+      - "Led development of key features and implemented CI/CD pipeline"
+      - "Optimized database performance by 40%"
+
 Job Description:
 {job_description}
 
@@ -77,64 +100,87 @@ Instructions:
 3. Adjust highlight points to match job requirements
 4. Keep all dates, contact info, and education details unchanged
 5. Only modify the content of highlights and skills to match the job
+6. Ensure all highlights are simple strings, not dictionaries
 
-Return the tailored content in any format that clearly shows the changes. Focus on content only, not structure.
+Return the tailored content in any format that clearly shows the changes.
 """
 
     FORMAT_PROMPT = """You are a YAML formatting expert. Your task is to format the provided resume content into proper YAML structure.
 
 The output MUST follow these requirements:
 1. Be valid YAML syntax
-2. Use proper indentation (2 spaces)
-3. All dates must be strings (e.g., "2023" not 2023)
-4. All text values must be in quotes
-5. All lists must be properly indented under their parent key
+2. Have these fields at the root level:
+   - basic: Dictionary containing basic information
+   - education: List of education entries
+   - experiences: List of work experiences
+   - skills: List of skill categories (each with category and skills fields)
+   - publications: List of publication entries (each with authors, title, location, and date)
+3. NOT start with a list item (-)
+4. NOT use a root-level key (like 'resume:')
+5. NOT use markdown formatting (no ```yaml or ```)
+6. Use proper indentation (2 spaces)
+7. All dates must be strings (e.g., "2023" not 2023)
+8. All lists must be properly indented under their parent key
 
-SECTION STRUCTURE:
-1. Basic Information (REQUIRED):
-   - name (REQUIRED)
-   - email (REQUIRED)
-   - phone (optional)
-   - location (optional)
+SECTION REQUIREMENTS:
+1. Education Section:
+   - Must contain only education entries
+   - Each entry MUST have: name, school, startdate, enddate
+   - Optional: highlights
+   - Example format:
+     education:
+       - name: "Computer Science"
+         school: "Example University"
+         startdate: "2018"
+         enddate: "2022"
+         highlights:
+           - "Thesis: Distributed Systems"
 
-2. Education (REQUIRED, can be empty list):
-   - name (REQUIRED)
-   - school (REQUIRED)
-   - startdate (REQUIRED)
-   - enddate (REQUIRED)
-   - highlights (optional)
+2. Experiences Section:
+   - Must contain only work experience entries
+   - Each entry MUST have: company, title, startdate, enddate, highlights
+   - Optional: location
+   - Example format:
+     experiences:
+       - company: "Example Corp"
+         title: "Software Engineer"
+         startdate: "2022"
+         enddate: "Present"
+         highlights:
+           - "Led development of key features"
 
-3. Experiences (REQUIRED, can be empty list):
-   - company (REQUIRED)
-   - title (REQUIRED)
-   - startdate (REQUIRED)
-   - enddate (REQUIRED)
-   - highlights (REQUIRED)
-   - location (optional)
+3. Skills Section:
+   - Must contain only skill categories
+   - Each category MUST have: category, skills
+   - Example format:
+     skills:
+       - category: "Technical"
+         skills:
+           - "Python"
+           - "Django"
 
-4. Skills (optional):
-   - category (REQUIRED)
-   - skills (REQUIRED)
+4. Publications Section:
+   - Must contain only publication entries
+   - Each entry MUST have: authors, title, location, date
+   - Example format:
+     publications:
+       - authors: "John Doe, Jane Smith"
+         title: "Modern Web Development"
+         location: "Conference 2023"
+         date: "2023"
 
-5. Publications (optional):
-   - authors (REQUIRED)
-   - title (REQUIRED)
-   - location (REQUIRED)
-   - date (REQUIRED)
-
-IMPORTANT RULES:
-- The root level must be a dictionary
-- Basic, education, and experiences sections are REQUIRED
-- Include only the sections and fields that are present in the input
-- Use proper indentation (2 spaces)
-- All text values must be in quotes
+IMPORTANT STRUCTURE RULES:
+- The root level must be a dictionary (no list items at root)
+- Each section (education, experiences, etc.) must be a list
+- List items must be indented with 2 spaces from their parent
 - All dates must be in quotes
 - All highlights must be strings, not dictionaries
+- DO NOT mix entries between sections (e.g., don't put experiences in education)
 
 Example of correct structure:
 basic:
-  name: "John Doe"
-  email: "john@example.com"
+  name: John Doe
+  email: john@example.com
 education:
   - name: "Computer Science"
     school: "Example University"
@@ -147,17 +193,27 @@ experiences:
     startdate: "2022"
     enddate: "Present"
     highlights:
-      - "Led development of key features"
+      - "Led development of key features and implemented CI/CD pipeline"
 skills:
   - category: "Technical"
     skills:
       - "Python"
       - "Django"
+      - "PostgreSQL"
+  - category: "Non-Technical"
+    skills:
+      - "Communication"
+      - "Leadership"
+publications:
+  - authors: "John Doe, Jane Smith"
+    title: "Modern Web Development Practices"
+    location: "Conference: WebDev Conference 2023, San Francisco, USA"
+    date: "2023"
 
 Resume Content to Format:
 {content}
 
-Return ONLY the raw YAML content, no markdown formatting or other text. Include only the sections and fields that are present in the input.
+Return ONLY the raw YAML content, no markdown formatting or other text. Make sure to follow the structure exactly as shown in the example.
 """
 
     def __init__(self, llm_client: LLMClient) -> None:
@@ -209,58 +265,9 @@ Return ONLY the raw YAML content, no markdown formatting or other text. Include 
             if not isinstance(data, dict):
                 raise InvalidOutputError("YAML must contain a dictionary at the root level")
             
-            # Validate required fields
-            if "basic" not in data or not isinstance(data["basic"], dict):
-                raise InvalidOutputError("'basic' section is required and must be a dictionary")
-            if "education" not in data:
-                raise InvalidOutputError("'education' section is required")
-            if not isinstance(data["education"], list):
-                raise InvalidOutputError("'education' section must be a list")
-            if "experiences" not in data:
-                raise InvalidOutputError("'experiences' section is required")
-            if not isinstance(data["experiences"], list):
-                raise InvalidOutputError("'experiences' section must be a list")
-            
-            # Log warnings for missing optional fields
-            if "skills" not in data:
-                logger.warning("Missing skills section")
-            if "publications" not in data:
-                logger.warning("Missing publications section")
-            
-            # Validate skills structure if present
+            # Validate skills structure
             if "skills" in data and not isinstance(data["skills"], list):
                 raise InvalidOutputError("'skills' must be a list of skill categories")
-            
-            # Convert any integer dates to strings
-            for section in ["education", "experiences"]:
-                if section in data:
-                    for entry in data[section]:
-                        if "startdate" in entry and isinstance(entry["startdate"], int):
-                            entry["startdate"] = str(entry["startdate"])
-                        if "enddate" in entry and isinstance(entry["enddate"], int):
-                            entry["enddate"] = str(entry["enddate"])
-            
-            # Ensure basic section has required fields
-            required_basic_fields = ["name", "email"]
-            for field in required_basic_fields:
-                if field not in data["basic"]:
-                    raise InvalidOutputError(f"Missing required field '{field}' in basic section")
-            
-            # Ensure education entries have required fields if not empty
-            for entry in data["education"]:
-                required_edu_fields = ["name", "school", "startdate", "enddate"]
-                for field in required_edu_fields:
-                    if field not in entry:
-                        raise InvalidOutputError(f"Missing required field '{field}' in education entry")
-            
-            # Ensure experience entries have required fields if not empty
-            for entry in data["experiences"]:
-                required_exp_fields = ["company", "title", "startdate", "enddate", "highlights"]
-                for field in required_exp_fields:
-                    if field not in entry:
-                        raise InvalidOutputError(f"Missing required field '{field}' in experience entry")
-                if not isinstance(entry["highlights"], list):
-                    raise InvalidOutputError("'highlights' must be a list in experience entry")
             
             return Resume(**data)
         except yaml.YAMLError as e:
