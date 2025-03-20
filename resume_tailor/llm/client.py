@@ -68,14 +68,15 @@ class OpenRouterLLMClient(LLMClient):
 
         self.model = "deepseek/deepseek-r1:free"
         self.client = ChatOpenAI(
-            api_key="dummy",  # Required by LangChain but not used
+            api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
             model=self.model,
             max_retries=3,
             request_timeout=30,
             default_headers={
                 "HTTP-Referer": "https://github.com/resume-tailoring",
-                "Authorization": f"Bearer {self.api_key}"
+                "Authorization": f"Bearer {self.api_key}",
+                "X-Title": "Resume Tailor"
             }
         )
 
@@ -93,23 +94,17 @@ class OpenRouterLLMClient(LLMClient):
             LLMError: If there's an error communicating with the LLM
         """
         try:
-            print(f"Sending prompt to OpenRouter: {prompt[:50]}...")
             # Get response from LLM
             response = self.client.invoke([HumanMessage(content=prompt)])
             
             if not isinstance(response, AIMessage):
                 raise LLMError("Invalid response format from LLM")
             
-            print("Successfully received response from OpenRouter")
-            print(f"Raw response content: {response.content}")
-            
             # Try to parse as JSON if possible
             try:
                 parsed = json.loads(response.content)
-                print("Successfully parsed JSON response")
                 return parsed
-            except json.JSONDecodeError as e:
-                print(f"Failed to parse JSON: {str(e)}")
+            except json.JSONDecodeError:
                 # If not JSON, return as plain text
                 return {"response": response.content}
                 
