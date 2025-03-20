@@ -2,6 +2,7 @@
 """Integration test script for the OpenRouter LLM client."""
 
 import os
+import time
 from typing import List
 from dotenv import load_dotenv
 from resume_tailor.llm.client import OpenRouterLLMClient
@@ -22,7 +23,10 @@ def test_prompts(client: OpenRouterLLMClient, prompts: List[str]) -> None:
         print("\nPrompt:", prompt)
         print("-" * 50)
         try:
+            start_time = time.time()
             response = client.generate(prompt)
+            end_time = time.time()
+            print(f"Response time: {end_time - start_time:.2f} seconds")
             print("Response:", response.get("content", response))
         except Exception as e:
             print(f"Error: {str(e)}")
@@ -41,6 +45,7 @@ def main() -> None:
 
     # Initialize the LLM client
     client = OpenRouterLLMClient(api_key=api_key)
+    print(f"Using model: {client.model}")
 
     # Test prompts
     prompts = [

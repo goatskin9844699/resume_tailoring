@@ -66,13 +66,14 @@ class OpenRouterLLMClient(LLMClient):
         if not self.api_key:
             raise LLMError("OpenRouter API key not provided")
 
-        self.model = "deepseek/deepseek-r1:free"
+        self.model = "mistralai/mistral-7b-instruct:free"
         self.client = ChatOpenAI(
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
             model=self.model,
-            max_retries=3,
-            request_timeout=30,
+            max_retries=2,
+            request_timeout=15,
+            temperature=0.7,
             default_headers={
                 "HTTP-Referer": "https://github.com/resume-tailoring",
                 "Authorization": f"Bearer {self.api_key}",

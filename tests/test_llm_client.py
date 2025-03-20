@@ -13,10 +13,10 @@ def client():
 
 
 def test_init_with_api_key():
-    """Test client initialization with API key."""
+    """Test initialization with API key."""
     client = OpenRouterLLMClient(api_key="test_key")
     assert client.api_key == "test_key"
-    assert client.model == "deepseek/deepseek-r1:free"
+    assert client.model == "mistralai/mistral-7b-instruct:free"
 
 
 def test_init_without_api_key(monkeypatch):
