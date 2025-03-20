@@ -1,7 +1,7 @@
 # Resume Parser - Technical Requirements
 
 ## Overview
-The Resume Parser is a component that processes YAML-formatted resume data to create validated and structured information for resume tailoring. It focuses on ensuring data integrity and format consistency to enable effective resume customization.
+The Resume Parser is a component that reads and validates YAML-formatted resume data. It focuses on ensuring data integrity and basic structure validation to provide clean data for the Resume Tailor.
 
 ## Core Concepts
 
@@ -9,30 +9,13 @@ The Resume Parser is a component that processes YAML-formatted resume data to cr
 - Accepts YAML-formatted resume files
 - Validates YAML syntax
 - Handles file reading operations
-- Manages input validation
+- Manages basic input validation
 
 ### Data Validation
-- Enforces schema compliance
-- Validates data types and formats
+- Validates YAML structure
 - Ensures required fields are present
-- Maintains data structure integrity
-
-### Data Structure
-The parser organizes resume information into the following categories:
-- Personal information
-- Professional summary
-- Work experience
-- Education
-- Technical skills
-- Projects
-- Certifications
-- Additional sections
-
-### Content Processing
-- Validates date formats
-- Checks for required fields
-- Ensures data type consistency
-- Validates section structure
+- Validates basic data types
+- Maintains data integrity
 
 ### Error Management
 - Handles invalid YAML syntax
@@ -45,10 +28,8 @@ The parser organizes resume information into the following categories:
 graph TD
     A[YAML Resume File] --> B[File Reading]
     B --> C[YAML Parsing]
-    C --> D[Schema Validation]
-    D --> E[Data Validation]
-    E --> F[Structure Validation]
-    F --> G[Structured Output]
+    C --> D[Basic Validation]
+    D --> E[Raw Output]
 
     subgraph "Input Processing"
         A
@@ -58,26 +39,20 @@ graph TD
 
     subgraph "Core Processing"
         D
-        E
-        F
     end
 
     subgraph "Output Processing"
-        G
+        E
     end
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
-    style G fill:#bbf,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
     style D fill:#bfb,stroke:#333,stroke-width:2px
 ```
 
 ## Output Format
-The validated information is structured into a standardized format containing:
-- Personal details
-- Professional information
-- Work history
-- Educational background
-- Skills and competencies
-- Project experience
-- Professional certifications
-- Additional qualifications 
+The parser returns the raw YAML data structure as provided in the input file, with basic validation ensuring:
+- Valid YAML syntax
+- Required fields present
+- Basic data types correct
+- No malformed content 
