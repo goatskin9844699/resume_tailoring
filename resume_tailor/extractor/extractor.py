@@ -1,6 +1,6 @@
 """Job description extraction module."""
 
-from typing import Dict
+from typing import Dict, Optional
 from urllib.parse import urlparse
 from ..llm.client import LLMClient
 from ..exceptions import ExtractorError
@@ -11,15 +11,16 @@ import json
 class JobDescriptionExtractor:
     """Extracts structured data from job descriptions."""
 
-    def __init__(self, llm_client: LLMClient):
+    def __init__(self, llm_client: LLMClient, scraper: Optional[WebScraper] = None):
         """
         Initialize the extractor.
 
         Args:
-            llm_client: LLM client for processing job descriptions
+            llm_client: LLM client for extracting structured data
+            scraper: Optional WebScraper instance for fetching content
         """
         self.llm = llm_client
-        self.scraper = WebScraper()
+        self.scraper = scraper or WebScraper()
 
     def extract(self, url: str) -> Dict:
         """
@@ -53,17 +54,29 @@ class JobDescriptionExtractor:
             prompt = self._generate_prompt(content)
             
             # Get structured data from LLM
-            job_data = self.llm.generate(prompt)
+            llm_response = self.llm.generate(prompt)
+            print(f"LLM response: {llm_response}")
             
-            # Handle wrapped response format
-            if "response" in job_data and isinstance(job_data["response"], str):
-                try:
-                    job_data = json.loads(job_data["response"])
-                except json.JSONDecodeError:
-                    raise ExtractorError("Invalid JSON response from LLM")
+            # Handle both wrapped and unwrapped responses
+            if isinstance(llm_response, dict):
+                if "content" in llm_response and isinstance(llm_response["content"], str):
+                    try:
+                        job_data = json.loads(llm_response["content"])
+                    except json.JSONDecodeError:
+                        raise ExtractorError("Invalid JSON response from LLM")
+                elif "response" in llm_response and isinstance(llm_response["response"], str):
+                    try:
+                        job_data = json.loads(llm_response["response"])
+                    except json.JSONDecodeError:
+                        raise ExtractorError("Invalid JSON response from LLM")
+                else:
+                    job_data = llm_response
+            else:
+                raise ExtractorError("Invalid response format from LLM")
             
             # Validate response
             if not job_data or not self._validate_job_data(job_data):
+                print(f"Invalid job data: {job_data}")
                 raise ExtractorError("Invalid or incomplete job description data")
                 
             return job_data
