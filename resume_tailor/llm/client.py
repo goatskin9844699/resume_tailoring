@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 import os
+import json
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -16,7 +17,7 @@ class LLMClient(ABC):
     """Abstract base class for LLM clients."""
 
     @abstractmethod
-    def generate(self, prompt: str) -> Any:
+    def generate(self, prompt: str) -> Dict:
         """
         Generate a response from the LLM.
 
@@ -24,7 +25,7 @@ class LLMClient(ABC):
             prompt: The prompt to send to the LLM
 
         Returns:
-            The LLM's response
+            The LLM's response as a dictionary
 
         Raises:
             LLMError: If there's an error communicating with the LLM
@@ -69,7 +70,7 @@ class OpenRouterLLMClient(LLMClient):
             }
         )
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str) -> Dict:
         """
         Generate a response from the LLM.
 
@@ -77,16 +78,29 @@ class OpenRouterLLMClient(LLMClient):
             prompt: The prompt to send to the LLM
 
         Returns:
-            The LLM's response
+            The LLM's response as a dictionary
 
         Raises:
             LLMError: If there's an error communicating with the LLM
         """
         try:
-            response = self.client.invoke([HumanMessage(content=prompt)])
-            return self.format_response(response)
+            # Add JSON formatting instruction to prompt
+            formatted_prompt = f"{prompt}\n\nPlease provide the response in valid JSON format."
+            
+            # Get response from LLM
+            response = self.client.invoke([HumanMessage(content=formatted_prompt)])
+            
+            if not isinstance(response, AIMessage):
+                raise LLMError("Invalid response format from LLM")
+            
+            # Parse JSON response
+            try:
+                return json.loads(response.content)
+            except json.JSONDecodeError as e:
+                raise LLMError(f"Failed to parse JSON response: {str(e)}")
+                
         except Exception as e:
-            raise Exception(f"Failed to generate response: {str(e)}")
+            raise LLMError(f"Failed to generate response: {str(e)}")
 
     def format_response(self, response: AIMessage) -> str:
         """

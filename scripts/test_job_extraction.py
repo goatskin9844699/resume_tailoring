@@ -6,8 +6,9 @@ import json
 import os
 from typing import Dict, Optional
 
+from dotenv import load_dotenv
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
-from resume_tailor.llm.client import OpenRouterLLMClient
+from resume_tailor.llm.client import OpenRouterLLMClient, LLMError
 from resume_tailor.exceptions import ExtractorError
 
 
@@ -70,6 +71,9 @@ def extract_job_description(url: str) -> Optional[Dict]:
     except ExtractorError as e:
         print(f"\nError extracting job description: {str(e)}")
         return None
+    except LLMError as e:
+        print(f"\nError communicating with LLM: {str(e)}")
+        return None
     except Exception as e:
         print(f"\nUnexpected error: {str(e)}")
         return None
@@ -77,6 +81,16 @@ def extract_job_description(url: str) -> Optional[Dict]:
 
 def main():
     """Main function to run the test script."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Get API key from environment
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        print("Error: OPENROUTER_API_KEY not found in environment variables")
+        print("Please create a .env file with your API key (see .env.example)")
+        return
+
     parser = argparse.ArgumentParser(description="Test job description extraction")
     parser.add_argument("url", help="URL of the job posting")
     parser.add_argument(
