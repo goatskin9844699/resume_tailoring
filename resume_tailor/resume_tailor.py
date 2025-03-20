@@ -33,16 +33,13 @@ class ResumeTailorError(Exception):
 class ResumeTailor:
     """Tailor resumes based on job descriptions using LLM."""
 
-    PROMPT_TEMPLATE = """You are an expert resume writer. Your task is to tailor a resume for a specific job description.
+    TAILOR_PROMPT = """You are an expert resume writer. Your task is to tailor a resume for a specific job description.
 You will be provided with a master resume in YAML format and a job description.
 Your goal is to create a tailored version of the resume that:
 1. Highlights experiences and skills most relevant to the job
-2. Maintains the exact same YAML structure as the input
-3. Preserves all required fields (basic info, education, etc.)
-4. Uses professional language
-5. Optimizes content for ATS systems
-
-The output MUST be valid YAML and follow the exact same structure as the input resume.
+2. Preserves all required fields (basic info, education, etc.)
+3. Uses professional language
+4. Optimizes content for ATS systems
 
 Job Description:
 {job_description}
@@ -54,11 +51,46 @@ Instructions:
 1. Analyze the job requirements
 2. Select and prioritize relevant experiences
 3. Adjust highlight points to match job requirements
-4. Return a complete YAML resume with the same structure
-5. Ensure all dates, contact info, and education details remain unchanged
-6. Only modify the content of highlights and skills to match the job
+4. Keep all dates, contact info, and education details unchanged
+5. Only modify the content of highlights and skills to match the job
 
-Return ONLY the YAML content, no other text.
+Return the tailored content in any format that clearly shows the changes.
+"""
+
+    FORMAT_PROMPT = """You are a YAML formatting expert. Your task is to format the provided resume content into proper YAML structure.
+
+The output MUST follow these requirements:
+1. Be valid YAML syntax
+2. Have these fields at the root level:
+   - basic: Dictionary containing basic information
+   - education: List of education entries
+   - experiences: List of work experiences
+3. NOT start with a list item (-)
+4. NOT use a root-level key (like 'resume:')
+5. NOT use markdown formatting (no ```yaml or ```)
+
+Example of correct structure:
+basic:
+  name: John Doe
+  email: john@example.com
+education:
+  - name: Computer Science
+    school: Example University
+    startdate: 2018
+    enddate: 2022
+experiences:
+  - company: Example Corp
+    titles:
+      - name: Software Engineer
+        startdate: 2022
+        enddate: Present
+    highlights:
+      - Led development of key features
+
+Resume Content to Format:
+{content}
+
+Return ONLY the raw YAML content, no markdown formatting or other text.
 """
 
     def __init__(self, llm_client: LLMClient) -> None:
@@ -68,6 +100,28 @@ Return ONLY the YAML content, no other text.
             llm_client: The LLM client to use for generating responses.
         """
         self.llm_client = llm_client
+
+    def _clean_yaml(self, yaml_str: str) -> str:
+        """Clean YAML string by removing markdown formatting.
+
+        Args:
+            yaml_str: YAML string that might contain markdown formatting.
+
+        Returns:
+            Cleaned YAML string.
+        """
+        # Remove markdown code block markers
+        lines = yaml_str.strip().split('\n')
+        if lines[0].startswith('```'):
+            lines = lines[1:]
+        if lines[-1].startswith('```'):
+            lines = lines[:-1]
+        
+        # Remove language identifier if present
+        if lines[0].strip() in ['yaml', 'YAML']:
+            lines = lines[1:]
+            
+        return '\n'.join(lines).strip()
 
     def _validate_yaml(self, yaml_str: str) -> Resume:
         """Validate YAML content.
@@ -82,7 +136,9 @@ Return ONLY the YAML content, no other text.
             InvalidOutputError: If the YAML is invalid.
         """
         try:
-            data = yaml.safe_load(yaml_str)
+            # Clean the YAML string first
+            cleaned_yaml = self._clean_yaml(yaml_str)
+            data = yaml.safe_load(cleaned_yaml)
             if not isinstance(data, dict):
                 raise InvalidOutputError("YAML must contain a dictionary at the root level")
             return Resume(**data)
@@ -105,23 +161,26 @@ Return ONLY the YAML content, no other text.
         # Validate input resume YAML
         self._validate_yaml(resume_yaml)
 
-        # Prepare the prompt
-        prompt = self.PROMPT_TEMPLATE.format(
-            job_description=job_description,
-            resume_yaml=resume_yaml,
-        )
-
         try:
-            # Get response from LLM
-            response = self.llm_client.generate(prompt)
+            # Step 1: Get tailored content
+            tailor_prompt = self.TAILOR_PROMPT.format(
+                job_description=job_description,
+                resume_yaml=resume_yaml,
+            )
+            tailor_response = self.llm_client.generate(tailor_prompt)
+            tailored_content = tailor_response["content"]
 
-            # Parse and validate the response
-            try:
-                return self._validate_yaml(response["content"])
-            except (yaml.YAMLError, KeyError, InvalidOutputError) as e:
-                raise InvalidOutputError("Invalid YAML in LLM response")
-        except InvalidOutputError:
-            raise
+            # Step 2: Format the content into proper YAML
+            format_prompt = self.FORMAT_PROMPT.format(
+                content=tailored_content
+            )
+            format_response = self.llm_client.generate(format_prompt)
+            
+            # Parse and validate the formatted YAML
+            return self._validate_yaml(format_response["content"])
+
+        except (yaml.YAMLError, KeyError, InvalidOutputError) as e:
+            raise InvalidOutputError("Failed to generate valid YAML")
         except Exception as e:
             raise InvalidOutputError("Failed to generate tailored resume")
 

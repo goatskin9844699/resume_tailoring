@@ -159,11 +159,14 @@ def mock_llm_client(mock_job_data, mock_llm_response):
     """Fixture providing a mocked LLM client."""
     mock_client = Mock(spec=OpenRouterLLMClient)
     
-    # First call returns job data (for extraction)
-    # Second call returns resume data (for tailoring)
+    # Set up responses for the complete flow:
+    # 1. First call returns job data (for extraction)
+    # 2. Second call returns tailored content (for tailoring step 1)
+    # 3. Third call returns formatted YAML (for tailoring step 2)
     mock_client.generate.side_effect = [
-        {"content": json.dumps(mock_job_data)},
-        {"content": yaml.dump(mock_llm_response)}
+        {"content": json.dumps(mock_job_data)},  # For job extraction
+        {"content": "Tailored content in any format"},  # For tailoring step 1
+        {"content": yaml.dump(mock_llm_response)}  # For tailoring step 2
     ]
     return mock_client
 

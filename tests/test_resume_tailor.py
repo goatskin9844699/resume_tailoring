@@ -76,8 +76,25 @@ def sample_resume_yaml():
 
 def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_yaml):
     """Test tailoring a resume with a job description."""
-    # Create mock response
-    mock_response = {
+    # Create mock responses for both steps
+    tailored_content = """
+    Basic Information:
+    - Name: John Doe
+    - Email: john@example.com
+    
+    Education:
+    - MSc Computer Science at Example University (09/2015 - 06/2017)
+      * GPA: 3.8
+    
+    Experience:
+    - TechCorp (San Francisco)
+      * Senior Engineer (01/2018 - Present)
+      * Led Python development team
+      * Implemented automated testing
+      * Optimized backend services
+    """
+    
+    formatted_yaml = {
         "basic": {
             "name": "John Doe",
             "email": "john@example.com",
@@ -111,7 +128,12 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
             }
         ],
     }
-    mock_llm_client.generate.return_value = {"content": yaml.dump(mock_response)}
+    
+    # Set up mock responses for both steps
+    mock_llm_client.generate.side_effect = [
+        {"content": tailored_content},  # First call: tailoring
+        {"content": yaml.dump(formatted_yaml)}  # Second call: formatting
+    ]
 
     tailor = ResumeTailor(mock_llm_client)
     result = tailor.tailor(sample_job_description, sample_resume_yaml)
@@ -119,13 +141,21 @@ def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_ya
     assert result.basic["name"] == "John Doe"
     assert len(result.experiences) == 1
     assert "Python" in result.experiences[0].highlights[0]
+    
+    # Verify both steps were called
+    assert mock_llm_client.generate.call_count == 2
 
 
 def test_tailor_resume_invalid_yaml(mock_llm_client, sample_job_description, sample_resume_yaml):
     """Test handling invalid YAML from LLM."""
-    mock_llm_client.generate.return_value = {"content": "invalid: yaml: content: -"}
+    # First call succeeds, second call returns invalid YAML
+    mock_llm_client.generate.side_effect = [
+        {"content": "Some tailored content"},  # First call: tailoring
+        {"content": "invalid: yaml: content: -"}  # Second call: formatting
+    ]
+    
     tailor = ResumeTailor(mock_llm_client)
-    with pytest.raises(InvalidOutputError, match="Invalid YAML in LLM response"):
+    with pytest.raises(InvalidOutputError, match="Failed to generate valid YAML"):
         tailor.tailor(sample_job_description, sample_resume_yaml)
 
 
