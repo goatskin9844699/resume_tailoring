@@ -30,7 +30,9 @@ def mock_job_data():
         "requirements": ["Req 1", "Req 2"],
         "technical_skills": ["Python", "Docker"],
         "non_technical_skills": ["Communication", "Leadership"],
-        "ats_keywords": ["python", "docker", "agile"]
+        "ats_keywords": ["python", "docker", "agile"],
+        "is_complete": True,
+        "truncation_note": ""
     }
 
 
@@ -110,7 +112,9 @@ def test_extract_wrapped_json_response(extractor, mock_llm, mock_content):
                    '"responsibilities": ["Task 1", "Task 2"], "requirements": ["Req 1", "Req 2"], '
                    '"technical_skills": ["Skill 1", "Skill 2"], '
                    '"non_technical_skills": ["Soft 1", "Soft 2"], '
-                   '"ats_keywords": ["Key 1", "Key 2"]}'
+                   '"ats_keywords": ["Key 1", "Key 2"], '
+                   '"is_complete": true, '
+                   '"truncation_note": ""}'
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
@@ -218,7 +222,9 @@ def test_extract_with_real_content(extractor, mock_llm):
             "docker",
             "software engineer",
             "web development"
-        ]
+        ],
+        "is_complete": True,
+        "truncation_note": ""
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=real_content):
@@ -270,7 +276,9 @@ def test_extract_with_minimal_content(extractor, mock_llm):
             "git",
             "junior developer",
             "software development"
-        ]
+        ],
+        "is_complete": True,
+        "truncation_note": ""
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=minimal_content):
@@ -279,6 +287,150 @@ def test_extract_with_minimal_content(extractor, mock_llm):
         result = extractor.extract("https://example.com/job")
         
         assert result == mock_response
+        assert len(result["responsibilities"]) >= 2
+        assert len(result["requirements"]) >= 2
+        assert len(result["technical_skills"]) >= 2
+        assert len(result["non_technical_skills"]) >= 2
+        assert len(result["ats_keywords"]) >= 2
+
+
+def test_extract_with_truncated_content(extractor, mock_llm):
+    """Test extraction with truncated job posting content."""
+    truncated_content = """
+    Senior Full-stack Developer
+
+    We are looking for an experienced developer to join our...
+    
+    Key Responsibilities:
+    - Lead development of...
+    - Design and implement...
+    """
+    
+    mock_response = {
+        "company": "Company name not found in truncated content",
+        "title": "Senior Full-stack Developer",
+        "summary": "We are looking for an experienced developer to join our...",
+        "responsibilities": [
+            "Lead development of...",
+            "Design and implement..."
+        ],
+        "requirements": [
+            "Content appears truncated",
+            "Requirements section missing"
+        ],
+        "technical_skills": [
+            "Full-stack development",
+            "Content appears truncated"
+        ],
+        "non_technical_skills": [
+            "Leadership implied from responsibilities",
+            "Unable to determine more from truncated content"
+        ],
+        "ats_keywords": [
+            "senior",
+            "full-stack",
+            "developer",
+            "development"
+        ],
+        "is_complete": False,
+        "truncation_note": "Content is truncated. Missing complete responsibilities, requirements, and skills sections."
+    }
+    
+    with patch.object(extractor.scraper, 'fetch_content', return_value=truncated_content):
+        mock_llm.generate.return_value = mock_response
+        
+        result = extractor.extract("https://example.com/job")
+        
+        assert result == mock_response
+        assert result["is_complete"] is False
+        assert len(result["truncation_note"]) > 0
+        assert len(result["responsibilities"]) >= 2
+        assert len(result["requirements"]) >= 2
+        assert len(result["technical_skills"]) >= 2
+        assert len(result["non_technical_skills"]) >= 2
+        assert len(result["ats_keywords"]) >= 2
+
+
+def test_extract_with_complete_content(extractor, mock_llm):
+    """Test extraction with complete job posting content."""
+    complete_content = """
+    Senior Python Developer at TechCorp
+    
+    About Us:
+    TechCorp is a leading software company...
+    
+    Job Description:
+    We are seeking a Senior Python Developer to join our team.
+    
+    Key Responsibilities:
+    - Lead Python application development
+    - Design system architecture
+    - Mentor junior developers
+    
+    Requirements:
+    - 5+ years Python experience
+    - Strong system design skills
+    - Experience with Django
+    
+    Technical Skills Required:
+    - Python 3.8+
+    - Django 4.x
+    - PostgreSQL
+    - Docker
+    
+    Soft Skills:
+    - Leadership
+    - Communication
+    - Problem-solving
+    """
+    
+    mock_response = {
+        "company": "TechCorp",
+        "title": "Senior Python Developer",
+        "summary": "We are seeking a Senior Python Developer to join our team.",
+        "responsibilities": [
+            "Lead Python application development",
+            "Design system architecture",
+            "Mentor junior developers"
+        ],
+        "requirements": [
+            "5+ years Python experience",
+            "Strong system design skills",
+            "Experience with Django"
+        ],
+        "technical_skills": [
+            "Python 3.8+",
+            "Django 4.x",
+            "PostgreSQL",
+            "Docker"
+        ],
+        "non_technical_skills": [
+            "Leadership",
+            "Communication",
+            "Problem-solving"
+        ],
+        "ats_keywords": [
+            "python",
+            "django",
+            "postgresql",
+            "docker",
+            "senior",
+            "developer",
+            "system design",
+            "leadership"
+        ],
+        "is_complete": True,
+        "truncation_note": ""
+    }
+    
+    with patch.object(extractor.scraper, 'fetch_content', return_value=complete_content):
+        mock_llm.generate.return_value = mock_response
+        
+        result = extractor.extract("https://example.com/job")
+        
+        assert result == mock_response
+        assert result["is_complete"] is True
+        assert result["truncation_note"] == ""
         assert len(result["responsibilities"]) >= 2
         assert len(result["requirements"]) >= 2
         assert len(result["technical_skills"]) >= 2

@@ -110,32 +110,78 @@ class JobDescriptionExtractor:
         Returns:
             Formatted prompt for the LLM
         """
-        return f"""You are a job description parser. Your task is to extract structured information from the job posting content below.
-You MUST respond with ONLY a valid JSON object, no other text. The response must be a single JSON object that can be parsed by json.loads().
+        return f"""You are a precise job description parser. Your task is to extract and structure all information from the job posting while maintaining perfect accuracy and completeness.
+
+Think of yourself as a high-precision scanner that:
+- Captures every detail exactly as written
+- Preserves all technical specifications precisely
+- Maintains the original context and relationships
+- Includes every requirement and qualification
 
 Job Posting Content:
 {content}
 
-Required JSON format:
+Your goal is to create a complete, accurate representation of this job posting. When extracting information:
+- Keep every technical detail exactly as written (e.g., "Python 3.8+" not just "Python")
+- Preserve all version numbers, frameworks, and specifications
+- Include every requirement, even if it seems redundant
+- Maintain the exact wording of all qualifications
+- Keep all bullet points and nested information
+
+Output Format:
 {{
-    "company": "Company name (required)",
-    "title": "Job title (required)",
-    "summary": "Brief job summary (required)",
-    "responsibilities": ["List of key responsibilities (at least 2)"],
-    "requirements": ["List of key requirements (at least 2)"],
-    "technical_skills": ["List of specific technical skills mentioned"],
-    "non_technical_skills": ["List of soft skills and non-technical requirements"],
-    "ats_keywords": ["Keywords optimized for ATS systems"]
+    "company": "Company name",
+    "title": "Job title",
+    "summary": "Complete job summary",
+    "responsibilities": ["List of responsibilities"],
+    "requirements": ["List of requirements"],
+    "technical_skills": ["List of technical skills"],
+    "non_technical_skills": ["List of non-technical skills"],
+    "ats_keywords": ["Keywords for ATS"],
+    "is_complete": boolean,  # Set to false if content appears truncated
+    "truncation_note": "string"  # Describe what appears to be missing
 }}
 
-Important rules:
-1. Respond with ONLY the JSON object, no other text
-2. All fields are required
-3. Lists must contain at least 2 items
-4. Use exact phrases from the job posting where possible
-5. Format must be valid JSON that can be parsed by json.loads()
-6. Do not include any explanatory text or markdown formatting
-7. Do not include any line breaks or extra whitespace in the JSON"""
+Examples of Good Extraction (Complete Content):
+
+Good:
+Original: "Must have 5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
+Extracted: "5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
+
+Bad:
+Original: "Must have 5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
+Extracted: "Python and Django experience"  # Lost critical version information
+
+Good:
+Original: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
+Extracted: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
+
+Bad:
+Original: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
+Extracted: "Microservices experience"  # Lost specific technologies
+
+Example of Good Extraction (Truncated Content):
+Original: "As a Senior Developer, you'll be responsible for... [content ends abruptly]"
+Extracted: {{
+    "title": "Senior Developer",
+    "summary": "Role description appears truncated",
+    "responsibilities": ["Content appears truncated"],
+    "requirements": ["Must infer from available content"],
+    "is_complete": false,
+    "truncation_note": "Content ends abruptly after initial role description. Missing detailed responsibilities and requirements."
+}}
+
+Remember:
+- Extract all available information even if content is truncated
+- Set is_complete to false if you detect any truncation
+- Describe missing sections in truncation_note
+- Provide as much detail as possible from available content
+- Never make up or infer missing information
+- You are a precision tool - accuracy is everything
+- Include everything you see, even if it seems redundant
+- If content appears truncated, note what might be missing
+- Preserve the exact wording of all technical specifications
+- Maintain the original context of all requirements"""
 
     def _validate_job_data(self, data: Dict) -> bool:
         """
@@ -151,7 +197,7 @@ Important rules:
             "company", "title", "summary",
             "responsibilities", "requirements",
             "technical_skills", "non_technical_skills",
-            "ats_keywords"
+            "ats_keywords", "is_complete", "truncation_note"
         ]
         
         # Check all required fields exist
@@ -159,7 +205,7 @@ Important rules:
             return False
             
         # Check all fields have non-empty values
-        if any(not data[field] for field in required_fields):
+        if any(not data[field] for field in required_fields if field not in ["is_complete", "truncation_note"]):
             return False
             
         # Check lists have at least 2 items
@@ -167,6 +213,14 @@ Important rules:
                       "non_technical_skills", "ats_keywords"]
         if any(not isinstance(data[field], list) or len(data[field]) < 2 
                for field in list_fields):
+            return False
+            
+        # Check is_complete is boolean
+        if not isinstance(data["is_complete"], bool):
+            return False
+            
+        # Check truncation_note is string
+        if not isinstance(data["truncation_note"], str):
             return False
             
         return True 
