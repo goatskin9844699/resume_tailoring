@@ -41,6 +41,32 @@ Your goal is to create a tailored version of the resume that:
 3. Uses professional language
 4. Optimizes content for ATS systems
 
+IMPORTANT FORMAT REQUIREMENTS:
+- All highlights MUST be simple strings, not dictionaries
+- For education highlights, combine thesis and coursework into single strings
+- For experience highlights, combine all details into single strings
+- Do not use nested structures in highlights
+
+Example of correct highlight format:
+education:
+  - name: Computer Science
+    school: Example University
+    startdate: 2018
+    enddate: 2022
+    highlights:
+      - "Thesis: Distributed Systems in Cloud Computing. Coursework: algorithms, distributed systems"
+      - "GPA: 3.8"
+
+experiences:
+  - company: Example Corp
+    titles:
+      - name: Software Engineer
+        startdate: 2022
+        enddate: Present
+    highlights:
+      - "Led development of key features and implemented CI/CD pipeline"
+      - "Optimized database performance by 40%"
+
 Job Description:
 {job_description}
 
@@ -53,6 +79,7 @@ Instructions:
 3. Adjust highlight points to match job requirements
 4. Keep all dates, contact info, and education details unchanged
 5. Only modify the content of highlights and skills to match the job
+6. Ensure all highlights are simple strings, not dictionaries
 
 Return the tailored content in any format that clearly shows the changes.
 """
@@ -85,7 +112,7 @@ experiences:
         startdate: 2022
         enddate: Present
     highlights:
-      - Led development of key features
+      - "Led development of key features and implemented CI/CD pipeline"
 
 Resume Content to Format:
 {content}
