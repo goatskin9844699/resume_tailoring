@@ -14,13 +14,15 @@ from unittest.mock import Mock, patch
 from dotenv import load_dotenv
 import logging
 
+from resume_tailor.utils.logging import setup_logging
+
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # Import components to test
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
-from resume_tailor.parser import ResumeParser
+from resume_tailor.core.resume_parser import ResumeParser
 from resume_tailor.core.resume_tailor import ResumeTailor
 from resume_tailor.llm.client import OpenRouterLLMClient
 
@@ -74,12 +76,8 @@ def print_tailored_resume(data: Dict) -> None:
         for skill in skill_cat.get("skills", []):
             print(f"- {skill}")
 
-def test_complete_resume_tailoring_flow(
-    job_url: str,
-    resume_path: str,
-    output_file: str = None
-) -> None:
-    """Test the complete flow of resume tailoring from start to finish."""
+def run_resume_tailoring(job_url: str, resume_path: str, output_file: str = None) -> None:
+    """Run the complete resume tailoring flow."""
     try:
         # Set up components
         print(f"\nSetting up LLM client...")
@@ -106,7 +104,7 @@ def test_complete_resume_tailoring_flow(
                 logger.debug(f"YAML content length: {len(resume_yaml)}")
             
             # Now try to parse with ResumeParser
-            resume_data = resume_parser.load_master_resume(resume_path)
+            resume_data = resume_parser.parse()
             if not resume_data:
                 raise Exception("ResumeParser returned None")
             logger.debug(f"Successfully parsed resume with ResumeParser")
@@ -140,6 +138,60 @@ def test_complete_resume_tailoring_flow(
         print(f"Traceback: {traceback.format_exc()}")
         return None
 
+@pytest.fixture
+def mock_job_url():
+    """Mock job URL for testing."""
+    return "https://example.com/job"
+
+@pytest.fixture
+def mock_resume_path(tmp_path):
+    """Create a mock resume file for testing."""
+    resume_data = {
+        "basic": {
+            "name": "Test User",
+            "email": "test@example.com"
+        },
+        "education": [
+            {
+                "name": "Test Degree",
+                "school": "Test University",
+                "startdate": "2020",
+                "enddate": "2024"
+            }
+        ],
+        "experiences": [
+            {
+                "company": "Test Company",
+                "titles": [
+                    {
+                        "name": "Test Role",
+                        "startdate": "2020",
+                        "enddate": "Present"
+                    }
+                ],
+                "highlights": ["Test highlight"]
+            }
+        ]
+    }
+    
+    resume_file = tmp_path / "test_resume.yaml"
+    with open(resume_file, "w") as f:
+        yaml.dump(resume_data, f)
+    return str(resume_file)
+
+def test_complete_resume_tailoring_flow(mock_job_url, mock_resume_path):
+    """Test the complete resume tailoring flow."""
+    with patch("resume_tailor.llm.client.OpenRouterLLMClient") as mock_llm:
+        mock_llm.return_value.generate.return_value = {"content": yaml.dump({
+            "basic": {"name": "Test User", "email": "test@example.com"},
+            "education": [{"name": "Test Degree", "school": "Test University", "startdate": "2020", "enddate": "2024"}],
+            "experiences": [{"company": "Test Company", "titles": [{"name": "Test Role", "startdate": "2020", "enddate": "Present"}], "highlights": ["Test highlight"]}]
+        })}
+        
+        result = run_resume_tailoring(mock_job_url, mock_resume_path)
+        assert result is not None
+        assert result.basic["name"] == "Test User"
+
 def main():
     """Main function to run the test script."""
     # Load environment variables from .env file
@@ -163,13 +215,13 @@ def main():
     args = parser.parse_args()
     
     # Run the test
-    tailored_resume = test_complete_resume_tailoring_flow(
+    result = run_resume_tailoring(
         job_url=args.url,
         resume_path=args.resume,
         output_file=args.output
     )
     
-    if tailored_resume:
+    if result:
         print("\nResume tailoring completed successfully!")
     else:
         print("\nResume tailoring failed.")
