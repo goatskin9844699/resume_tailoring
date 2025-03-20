@@ -59,10 +59,10 @@ education:
 
 experiences:
   - company: Example Corp
-    titles:
-      - name: Software Engineer
-        startdate: 2022
-        enddate: Present
+    location: San Francisco
+    title: Software Engineer
+    startdate: 2022
+    enddate: Present
     highlights:
       - "Led development of key features and implemented CI/CD pipeline"
       - "Optimized database performance by 40%"
@@ -107,10 +107,10 @@ education:
     enddate: 2022
 experiences:
   - company: Example Corp
-    titles:
-      - name: Software Engineer
-        startdate: 2022
-        enddate: Present
+    location: San Francisco
+    title: Software Engineer
+    startdate: 2022
+    enddate: Present
     highlights:
       - "Led development of key features and implemented CI/CD pipeline"
 

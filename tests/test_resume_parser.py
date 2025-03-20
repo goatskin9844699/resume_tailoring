@@ -32,13 +32,9 @@ def sample_resume_file(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                "titles": [
-                    {
-                        "name": "Software Engineer",
-                        "startdate": "2019",
-                        "enddate": "Present",
-                    }
-                ],
+                "title": "Software Engineer",
+                "startdate": "2019",
+                "enddate": "Present",
                 "highlights": ["Developed features", "Fixed bugs"],
             }
         ],
@@ -97,13 +93,9 @@ def test_parse_missing_required_field(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                "titles": [
-                    {
-                        "name": "Software Engineer",
-                        "startdate": "2019",
-                        "enddate": "Present",
-                    }
-                ],
+                "title": "Software Engineer",
+                "startdate": "2019",
+                "enddate": "Present",
                 "highlights": ["Developed features"],
             }
         ],
@@ -157,7 +149,7 @@ def test_parse_missing_experience_fields(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                # Missing titles and highlights
+                # Missing title, startdate, enddate, and highlights
             }
         ],
     }
@@ -185,13 +177,9 @@ def test_parse_missing_education_fields(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                "titles": [
-                    {
-                        "name": "Software Engineer",
-                        "startdate": "2019",
-                        "enddate": "Present",
-                    }
-                ],
+                "title": "Software Engineer",
+                "startdate": "2019",
+                "enddate": "Present",
                 "highlights": ["Developed features"],
             }
         ],
@@ -221,8 +209,10 @@ def test_parse_invalid_titles_structure(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                "titles": "not a list",  # Invalid structure
-                "highlights": ["Developed features"],
+                "title": "Software Engineer",
+                "startdate": "2019",
+                "enddate": "Present",
+                "highlights": "not a list",  # Invalid structure
             }
         ],
     }
@@ -251,13 +241,9 @@ def test_parse_invalid_highlights_structure(tmp_path):
         "experiences": [
             {
                 "company": "Tech Corp",
-                "titles": [
-                    {
-                        "name": "Software Engineer",
-                        "startdate": "2019",
-                        "enddate": "Present",
-                    }
-                ],
+                "title": "Software Engineer",
+                "startdate": "2019",
+                "enddate": "Present",
                 "highlights": "not a list",  # Invalid structure
             }
         ],

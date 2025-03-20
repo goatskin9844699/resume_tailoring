@@ -34,7 +34,7 @@ class ResumeParser:
     REQUIRED_FIELDS = {
         "basic": ["name", "email"],
         "education": ["name", "school", "startdate", "enddate"],
-        "experiences": ["company", "titles", "highlights"],
+        "experiences": ["company", "title", "startdate", "enddate", "highlights"],
     }
 
     def __init__(self, file_path: str) -> None:
@@ -116,8 +116,6 @@ class ResumeParser:
                 raise MissingRequiredFieldError(
                     f"Missing required field '{field}' in experience entry"
                 )
-            if field == "titles" and not isinstance(experience[field], list):
-                raise InvalidYAMLError("'titles' must be a list")
             if field == "highlights" and not isinstance(experience[field], list):
                 raise InvalidYAMLError("'highlights' must be a list")
 

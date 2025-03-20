@@ -1,5 +1,3 @@
-editing: false
-debug: false
 basic:
   name: John Doe
   address: New York, NY, USA
@@ -27,24 +25,20 @@ education:
 
 experiences:
 - company: TechCorp
-  skip_name: false
   location: New York, USA
-  titles:
-  - name: Senior Software Engineer
-    startdate: 01/2020
-    enddate: present
+  title: Senior Software Engineer
+  startdate: 01/2020
+  enddate: present
   highlights:
       - Led development of microservices architecture
       - Implemented CI/CD pipeline
       - Mentored junior developers
 
 - company: StartUp Inc
-  skip_name: false
   location: San Francisco, USA
-  titles:
-  - name: Software Engineer
-    startdate: 06/2017
-    enddate: 12/2019
+  title: Software Engineer
+  startdate: 06/2017
+  enddate: 12/2019
   highlights:
       - Developed REST APIs
       - Improved test coverage
@@ -59,8 +53,7 @@ projects:
 publications:
   - authors: "John Doe, Jane Smith"
     title: "Modern Web Development Practices"
-    conference: "WebDev Conference 2023"
-    location: "San Francisco, USA"
+    location: "Conference: WebDev Conference 2023, San Francisco, USA"
     date: "2023"
 
 skills:
