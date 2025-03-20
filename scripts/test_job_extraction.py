@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import logging
 import os
 from typing import Dict, Optional
 
@@ -11,11 +10,10 @@ from dotenv import load_dotenv
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
 from resume_tailor.llm.client import OpenRouterLLMClient, LLMError
 from resume_tailor.exceptions import ExtractorError
+from resume_tailor.utils.logging import setup_logging
 
-# Configure logging to suppress debug messages
-logging.getLogger("openai").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
+# Set up logging
+setup_logging()
 
 def setup_llm_client() -> OpenRouterLLMClient:
     """Set up the LLM client with API key from environment."""

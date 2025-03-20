@@ -2,15 +2,13 @@
 """Integration test script for the OpenRouter LLM client."""
 
 import os
-import logging
 from typing import List
 from dotenv import load_dotenv
 from resume_tailor.llm.client import OpenRouterLLMClient
+from resume_tailor.utils.logging import setup_logging
 
-# Configure logging to suppress debug messages
-logging.getLogger("openai").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
+# Set up logging
+setup_logging()
 
 def test_prompts(client: OpenRouterLLMClient, prompts: List[str]) -> None:
     """

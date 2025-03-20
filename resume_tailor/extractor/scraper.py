@@ -7,9 +7,10 @@ from ..exceptions import ExtractorError
 import logging
 import asyncio
 from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
+from ..utils.logging import setup_logging
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
