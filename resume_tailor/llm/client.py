@@ -66,7 +66,7 @@ class OpenRouterLLMClient(LLMClient):
         if not self.api_key:
             raise LLMError("OpenRouter API key not provided")
 
-        self.model = "mistralai/mistral-7b-instruct:free"
+        self.model = "google/gemini-2.0-flash-lite-001"
         self.client = ChatOpenAI(
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
@@ -101,12 +101,25 @@ class OpenRouterLLMClient(LLMClient):
             if not isinstance(response, AIMessage):
                 raise LLMError("Invalid response format from LLM")
             
+            # Clean the content by removing markdown code blocks
+            content = response.content
+            if content.startswith('```'):
+                # Remove opening code block
+                content = content.split('\n', 1)[1]
+                # Remove closing code block if present
+                if content.endswith('```'):
+                    content = content[:-3]
+                # Remove language identifier if present
+                if content.startswith('json'):
+                    content = content[4:]
+                content = content.strip()
+            
             # Try to parse as JSON if possible
             try:
-                return json.loads(response.content)
+                return json.loads(content)
             except json.JSONDecodeError:
                 # If not JSON, return as plain text
-                return {"content": response.content}
+                return {"content": content}
                 
         except Exception as e:
             error_msg = f"Failed to communicate with OpenRouter: {str(e)}"
