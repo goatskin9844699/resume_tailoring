@@ -40,12 +40,23 @@ Your goal is to create a tailored version of the resume that:
 2. Preserves all required fields (basic info, education, etc.)
 3. Uses professional language
 4. Optimizes content for ATS systems
+5. Creates a compelling objective statement that aligns with the job requirements
 
 IMPORTANT FORMAT REQUIREMENTS:
 - All highlights MUST be simple strings, not dictionaries
 - For education highlights, combine thesis and coursework into single strings
 - For experience highlights, combine all details into single strings
 - Do not use nested structures in highlights
+- Include an objective statement that summarizes the candidate's fit for the role
+
+OBJECTIVE STATEMENT REQUIREMENTS:
+- Should be 2-3 sentences long
+- Must highlight relevant experience and skills
+- Should align with the job requirements
+- Must be specific to the role and company
+- Should demonstrate value proposition
+- Must be professional and engaging
+- Should include relevant keywords from the job description
 
 BULLET POINT CRITERIA:
 - Each highlight must be based on what is mentioned in the original resume
@@ -69,6 +80,11 @@ ACTION VERB RULES:
 - Assuming responsibility: Achieved, Developed, Operated, Adopted, Doubled, Overcome, Arranged, Established, Performed, Assembled, Evaluated, Prepared, Assumed, Experienced, Produced, Attended, Gathered, Received, Audited, Halted, Reduced, Built, Handled, Reviewed, Checked, Improved, Simplified, Classified, Implemented, Sold, Collected, Initiated, Transacted, Compiled, Installed, Tripled, Constructed, Integrated
 
 Example of correct highlight format:
+basic:
+  name: John Doe
+  email: john@example.com
+objective: "Senior Software Engineer with 8+ years of experience in full-stack development, specializing in Python and cloud technologies. Proven track record of building scalable applications and leading development teams. Passionate about creating efficient, maintainable code and mentoring junior developers."
+
 education:
   - name: Computer Science
     school: Example University
@@ -111,6 +127,7 @@ The output MUST follow these requirements:
 1. Be valid YAML syntax
 2. Have these fields at the root level:
    - basic: Dictionary containing basic information
+   - objective: String containing the career objective
    - education: List of education entries
    - experiences: List of work experiences
    - skills: List of skill categories (each with category and skills fields)
@@ -123,7 +140,20 @@ The output MUST follow these requirements:
 8. All lists must be properly indented under their parent key
 
 SECTION REQUIREMENTS:
-1. Education Section:
+1. Basic Section:
+   - Must contain basic information
+   - Example format:
+     basic:
+       name: "John Doe"
+       email: "john@example.com"
+
+2. Objective Section:
+   - Must be a single string
+   - Should be 2-3 sentences
+   - Example format:
+     objective: "Senior Software Engineer with 8+ years of experience in full-stack development, specializing in Python and cloud technologies. Proven track record of building scalable applications and leading development teams."
+
+3. Education Section:
    - Must contain only education entries
    - Each entry MUST have: name, school, startdate, enddate
    - Optional: highlights
@@ -136,7 +166,7 @@ SECTION REQUIREMENTS:
          highlights:
            - "Thesis: Distributed Systems"
 
-2. Experiences Section:
+4. Experiences Section:
    - Must contain only work experience entries
    - Each entry MUST have: company, title, startdate, enddate, highlights
    - Optional: location
@@ -149,7 +179,7 @@ SECTION REQUIREMENTS:
          highlights:
            - "Led development of key features"
 
-3. Skills Section:
+5. Skills Section:
    - Must contain only skill categories
    - Each category MUST have: category, skills
    - Example format:
@@ -159,7 +189,7 @@ SECTION REQUIREMENTS:
            - "Python"
            - "Django"
 
-4. Publications Section:
+6. Publications Section:
    - Must contain only publication entries
    - Each entry MUST have: authors, title, location, date
    - Example format:
@@ -181,6 +211,7 @@ Example of correct structure:
 basic:
   name: John Doe
   email: john@example.com
+objective: "Senior Software Engineer with 8+ years of experience in full-stack development, specializing in Python and cloud technologies. Proven track record of building scalable applications and leading development teams."
 education:
   - name: "Computer Science"
     school: "Example University"
