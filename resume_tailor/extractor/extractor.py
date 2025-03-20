@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from ..llm.client import LLMClient
 from ..exceptions import ExtractorError
 from .scraper import WebScraper
+import json
 
 
 class JobDescriptionExtractor:
@@ -54,9 +55,16 @@ class JobDescriptionExtractor:
             # Get structured data from LLM
             job_data = self.llm.generate(prompt)
             
+            # Handle wrapped response format
+            if "response" in job_data and isinstance(job_data["response"], str):
+                try:
+                    job_data = json.loads(job_data["response"])
+                except json.JSONDecodeError:
+                    raise ExtractorError("Invalid JSON response from LLM")
+            
             # Validate response
-            if not job_data:
-                raise ExtractorError("Empty job description data")
+            if not job_data or not self._validate_job_data(job_data):
+                raise ExtractorError("Invalid or incomplete job description data")
                 
             return job_data
             
@@ -89,26 +97,61 @@ class JobDescriptionExtractor:
         Returns:
             Formatted prompt for the LLM
         """
-        return f"""Extract structured information from this job posting content:
+        return f"""You are a job description parser. Your task is to extract structured information from the job posting content below.
+You MUST respond with ONLY a valid JSON object, no other text.
 
+Job Posting Content:
 {content}
 
-Please provide the information in the following JSON format:
+Required JSON format:
 {{
-    "company": "Company name",
-    "title": "Job title",
-    "summary": "Brief job summary",
-    "responsibilities": ["List of responsibilities"],
-    "requirements": ["List of requirements"],
-    "technical_skills": ["List of technical skills"],
-    "non_technical_skills": ["List of non-technical skills"],
-    "ats_keywords": ["List of ATS-optimized keywords"]
+    "company": "Company name (required)",
+    "title": "Job title (required)",
+    "summary": "Brief job summary (required)",
+    "responsibilities": ["List of key responsibilities (at least 2)"],
+    "requirements": ["List of key requirements (at least 2)"],
+    "technical_skills": ["List of specific technical skills mentioned"],
+    "non_technical_skills": ["List of soft skills and non-technical requirements"],
+    "ats_keywords": ["Keywords optimized for ATS systems"]
 }}
 
-Focus on extracting:
-1. Clear job title and company name
-2. Key responsibilities and requirements
-3. Technical and non-technical skills
-4. ATS-optimized keywords that match the job requirements
+Important rules:
+1. Respond with ONLY the JSON object, no other text
+2. All fields are required
+3. Lists must contain at least 2 items
+4. Use exact phrases from the job posting where possible
+5. Format must be valid JSON"""
 
-Ensure all lists are non-empty and contain relevant information.""" 
+    def _validate_job_data(self, data: Dict) -> bool:
+        """
+        Validate the structure and content of job data.
+
+        Args:
+            data: Job data to validate
+
+        Returns:
+            True if valid, False otherwise
+        """
+        required_fields = [
+            "company", "title", "summary",
+            "responsibilities", "requirements",
+            "technical_skills", "non_technical_skills",
+            "ats_keywords"
+        ]
+        
+        # Check all required fields exist
+        if not all(field in data for field in required_fields):
+            return False
+            
+        # Check all fields have non-empty values
+        if any(not data[field] for field in required_fields):
+            return False
+            
+        # Check lists have at least 2 items
+        list_fields = ["responsibilities", "requirements", "technical_skills", 
+                      "non_technical_skills", "ats_keywords"]
+        if any(not isinstance(data[field], list) or len(data[field]) < 2 
+               for field in list_fields):
+            return False
+            
+        return True 
