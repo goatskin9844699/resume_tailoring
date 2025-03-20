@@ -35,8 +35,21 @@ class WebScraper:
             response = self.session.get(url)
             response.raise_for_status()
 
-            # Parse HTML
-            soup = BeautifulSoup(response.text, 'lxml')
+            # Try different parsers in order of preference
+            parsers = ['lxml', 'html.parser']
+            soup = None
+            last_error = None
+
+            for parser in parsers:
+                try:
+                    soup = BeautifulSoup(response.text, parser)
+                    break
+                except Exception as e:
+                    last_error = e
+                    continue
+
+            if soup is None:
+                raise ExtractorError(f"Failed to parse HTML with any parser. Last error: {str(last_error)}")
 
             # Remove script and style elements
             for element in soup(['script', 'style']):

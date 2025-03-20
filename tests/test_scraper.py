@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from resume_tailor.extractor.scraper import WebScraper
 from resume_tailor.exceptions import ExtractorError
+from bs4 import BeautifulSoup
 
 
 @pytest.fixture
@@ -71,4 +72,28 @@ def test_fetch_content_invalid_html(scraper):
     
     with patch('requests.Session.get', return_value=mock_response):
         content = scraper.fetch_content('https://example.com/job')
-        assert content == ''  # Should handle invalid HTML gracefully 
+        assert content == ''  # Should handle invalid HTML gracefully
+
+
+def test_fetch_content_parser_fallback(scraper, mock_response):
+    """Test parser fallback functionality."""
+    with patch('requests.Session.get', return_value=mock_response):
+        # Mock BeautifulSoup to fail with lxml but succeed with html.parser
+        with patch('bs4.BeautifulSoup', side_effect=[
+            Exception('lxml error'),
+            BeautifulSoup(mock_response.text, 'html.parser')
+        ]):
+            content = scraper.fetch_content('https://example.com/job')
+            assert 'Job Title' in content
+            assert 'Job Description' in content
+
+
+def test_fetch_content_all_parsers_fail(scraper):
+    """Test handling when all parsers fail."""
+    mock_response = MagicMock()
+    mock_response.text = '<html><body>Test</body></html>'
+    
+    with patch('requests.Session.get', return_value=mock_response):
+        with patch('bs4.BeautifulSoup', side_effect=Exception('Parser error')):
+            with pytest.raises(ExtractorError, match="Failed to parse HTML with any parser"):
+                scraper.fetch_content('https://example.com/job') 
