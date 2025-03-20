@@ -1,4 +1,4 @@
-"""Core functionality for resume tailoring."""
+"""Core components of the Resume Tailor package."""
 
 from resume_tailor.core.resume_parser import (
     ResumeParser,
@@ -14,12 +14,12 @@ from resume_tailor.core.resume_tailor import (
 )
 
 __all__ = [
-    'ResumeParser',
-    'ResumeParserError',
-    'InvalidYAMLError',
-    'MissingRequiredFieldError',
-    'ResumeTailor',
-    'ResumeTailorError',
-    'InvalidOutputError',
-    'LLMClient',
+    "ResumeParser",
+    "ResumeParserError",
+    "InvalidYAMLError",
+    "MissingRequiredFieldError",
+    "ResumeTailor",
+    "ResumeTailorError",
+    "InvalidOutputError",
+    "LLMClient",
 ] 

@@ -14,6 +14,7 @@ from resume_tailor.core import (
     InvalidOutputError,
     LLMClient,
 )
+from resume_tailor.extractor import JobDescriptionExtractor
 
 __all__ = [
     'ResumeParser',
@@ -24,4 +25,5 @@ __all__ = [
     'ResumeTailorError',
     'InvalidOutputError',
     'LLMClient',
+    'JobDescriptionExtractor',
 ] 
