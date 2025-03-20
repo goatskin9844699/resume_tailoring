@@ -16,7 +16,7 @@ def test_init_with_api_key():
     """Test initialization with API key."""
     client = OpenRouterLLMClient(api_key="test_key")
     assert client.api_key == "test_key"
-    assert client.model == "mistralai/mistral-7b-instruct:free"
+    assert client.model == "anthropic/claude-3-sonnet-20240229"
 
 
 def test_init_without_api_key(monkeypatch):
