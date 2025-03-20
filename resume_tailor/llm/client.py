@@ -101,11 +101,15 @@ class OpenRouterLLMClient(LLMClient):
                 raise LLMError("Invalid response format from LLM")
             
             print("Successfully received response from OpenRouter")
+            print(f"Raw response content: {response.content}")
             
             # Try to parse as JSON if possible
             try:
-                return json.loads(response.content)
-            except json.JSONDecodeError:
+                parsed = json.loads(response.content)
+                print("Successfully parsed JSON response")
+                return parsed
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse JSON: {str(e)}")
                 # If not JSON, return as plain text
                 return {"response": response.content}
                 

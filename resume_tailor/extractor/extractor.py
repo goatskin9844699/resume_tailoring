@@ -98,7 +98,7 @@ class JobDescriptionExtractor:
             Formatted prompt for the LLM
         """
         return f"""You are a job description parser. Your task is to extract structured information from the job posting content below.
-You MUST respond with ONLY a valid JSON object, no other text.
+You MUST respond with ONLY a valid JSON object, no other text. The response must be a single JSON object that can be parsed by json.loads().
 
 Job Posting Content:
 {content}
@@ -120,7 +120,9 @@ Important rules:
 2. All fields are required
 3. Lists must contain at least 2 items
 4. Use exact phrases from the job posting where possible
-5. Format must be valid JSON"""
+5. Format must be valid JSON that can be parsed by json.loads()
+6. Do not include any explanatory text or markdown formatting
+7. Do not include any line breaks or extra whitespace in the JSON"""
 
     def _validate_job_data(self, data: Dict) -> bool:
         """
