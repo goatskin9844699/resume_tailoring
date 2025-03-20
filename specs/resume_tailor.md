@@ -90,3 +90,31 @@ The tailored resume maintains the same structure as the input resume with:
 - Highlighted matching content
 - Optimized keywords
 - Preserved formatting 
+
+## Implementation Approach
+
+### Job Description Analysis
+- Extract structured data from job postings:
+  * Technical skills
+  * Non-technical skills
+  * ATS keywords
+  * Requirements
+  * Responsibilities
+  * Industry context
+- Use semantic understanding for skill matching
+- Consider industry-specific terminology
+- Identify transferable skills
+
+### Content Matching
+- Match skills semantically (e.g., "Python" matches "Python 3.8+")
+- Consider industry context when matching experiences
+- Look for transferable skills across different domains
+- Match experience levels appropriately
+- Prioritize recent and relevant experiences
+
+### ATS Optimization
+- Use extracted ATS keywords strategically
+- Maintain proper keyword density
+- Ensure format compatibility
+- Optimize section headers
+- Validate content structure
