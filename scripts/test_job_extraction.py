@@ -64,8 +64,37 @@ def extract_job_description(url: str) -> Optional[Dict]:
         
         # Extract data
         print(f"\nExtracting data from URL: {url}")
-        job_data = extractor.extract(url)
+        print("Fetching content from URL...")
+        content = extractor.scraper.fetch_content(url)
+        print(f"Content length: {len(content)} characters")
         
+        print("\nGenerating prompt...")
+        prompt = extractor._generate_prompt(content)
+        print(f"Prompt length: {len(prompt)} characters")
+        
+        print("\nSending to LLM...")
+        job_data = extractor.llm.generate(prompt)
+        print(f"Raw LLM response type: {type(job_data)}")
+        print(f"Raw LLM response: {json.dumps(job_data, indent=2)}")
+        
+        print("\nProcessing response...")
+        if "response" in job_data and isinstance(job_data["response"], str):
+            print("Found wrapped response, attempting to parse JSON...")
+            print(f"Wrapped response content: {job_data['response']}")
+            try:
+                job_data = json.loads(job_data["response"])
+                print("Successfully parsed JSON response")
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse JSON: {str(e)}")
+                print(f"Invalid JSON content: {job_data['response']}")
+                raise ExtractorError("Invalid JSON response from LLM")
+        
+        print("\nValidating job data...")
+        if not job_data or not extractor._validate_job_data(job_data):
+            print("Job data validation failed")
+            raise ExtractorError("Invalid or incomplete job description data")
+        
+        print("Extraction successful!")
         return job_data
         
     except ExtractorError as e:
@@ -76,6 +105,8 @@ def extract_job_description(url: str) -> Optional[Dict]:
         return None
     except Exception as e:
         print(f"\nUnexpected error: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return None
 
 
