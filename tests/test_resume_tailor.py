@@ -2,8 +2,17 @@
 
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from resume_tailor import ResumeTailor, InvalidOutputError
+
+
+@pytest.fixture
+def mock_llm_client():
+    """Create a mock LLM client."""
+    client = MagicMock()
+    client.generate.return_value = {"content": "basic:\n  name: John Doe\n  email: john@example.com"}
+    return client
 
 
 @pytest.fixture
@@ -55,8 +64,26 @@ experiences:
 """
 
 
-def test_tailor_resume(sample_job_description, sample_resume_yaml):
+def test_tailor_resume(mock_llm_client, sample_job_description, sample_resume_yaml):
     """Test tailoring a resume with a job description."""
-    tailor = ResumeTailor()
-    with pytest.raises(NotImplementedError):
+    tailor = ResumeTailor(mock_llm_client)
+    result = tailor.tailor(sample_job_description, sample_resume_yaml)
+    assert isinstance(result, dict)
+    assert "basic" in result
+    assert result["basic"]["name"] == "John Doe"
+
+
+def test_tailor_resume_invalid_yaml(mock_llm_client, sample_job_description, sample_resume_yaml):
+    """Test handling invalid YAML from LLM."""
+    mock_llm_client.generate.return_value = {"content": "invalid: yaml: content: -"}
+    tailor = ResumeTailor(mock_llm_client)
+    with pytest.raises(InvalidOutputError, match="Invalid YAML in LLM response"):
+        tailor.tailor(sample_job_description, sample_resume_yaml)
+
+
+def test_tailor_resume_llm_error(mock_llm_client, sample_job_description, sample_resume_yaml):
+    """Test handling LLM error."""
+    mock_llm_client.generate.side_effect = Exception("LLM error")
+    tailor = ResumeTailor(mock_llm_client)
+    with pytest.raises(InvalidOutputError, match="Failed to generate tailored resume"):
         tailor.tailor(sample_job_description, sample_resume_yaml) 

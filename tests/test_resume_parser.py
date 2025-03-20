@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 
-from resume_parser import (
+from resume_tailor import (
     InvalidYAMLError,
     MissingRequiredFieldError,
     ResumeParser,

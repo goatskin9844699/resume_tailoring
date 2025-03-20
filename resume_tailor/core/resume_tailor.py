@@ -1,8 +1,24 @@
 """Resume Tailor module for customizing resumes based on job descriptions."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Protocol
 
-from resume_parser import ResumeParser
+import yaml
+from resume_tailor.core.resume_parser import ResumeParser
+
+
+class LLMClient(Protocol):
+    """Protocol for LLM clients."""
+
+    def generate(self, prompt: str) -> Dict[str, Any]:
+        """Generate a response from the LLM.
+
+        Args:
+            prompt: The prompt to send to the LLM.
+
+        Returns:
+            Dict containing the LLM's response.
+        """
+        ...
 
 
 class ResumeTailorError(Exception):
@@ -48,9 +64,33 @@ Instructions:
 Return ONLY the YAML content, no other text.
 """
 
-    def __init__(self) -> None:
-        """Initialize the Resume Tailor."""
-        self.parser = ResumeParser("dummy.yaml")  # For validation only
+    def __init__(self, llm_client: LLMClient) -> None:
+        """Initialize the Resume Tailor.
+
+        Args:
+            llm_client: The LLM client to use for generating responses.
+        """
+        self.llm_client = llm_client
+
+    def _validate_yaml(self, yaml_str: str) -> Dict[str, Any]:
+        """Validate YAML content.
+
+        Args:
+            yaml_str: YAML content to validate.
+
+        Returns:
+            Dict containing the parsed YAML data.
+
+        Raises:
+            InvalidOutputError: If the YAML is invalid.
+        """
+        try:
+            data = yaml.safe_load(yaml_str)
+            if not isinstance(data, dict):
+                raise InvalidOutputError("YAML must contain a dictionary at the root level")
+            return data
+        except yaml.YAMLError as e:
+            raise InvalidOutputError(f"Invalid YAML syntax: {str(e)}")
 
     def tailor(self, job_description: str, resume_yaml: str) -> Dict[str, Any]:
         """Tailor the resume for a specific job description.
@@ -65,19 +105,33 @@ Return ONLY the YAML content, no other text.
         Raises:
             InvalidOutputError: If the LLM output is invalid.
         """
+        # Validate input resume YAML
+        self._validate_yaml(resume_yaml)
+
         # Prepare the prompt
         prompt = self.PROMPT_TEMPLATE.format(
             job_description=job_description,
             resume_yaml=resume_yaml,
         )
 
-        # TODO: Call LLM API with prompt
-        # For now, we'll raise NotImplementedError
-        raise NotImplementedError("LLM integration not implemented yet")
+        try:
+            # Get response from LLM
+            response = self.llm_client.generate(prompt)
 
-        # TODO: Parse and validate the LLM output
-        # output_yaml = llm_response
-        # try:
-        #     return self.parser.parse(output_yaml)
-        # except Exception as e:
-        #     raise InvalidOutputError(f"Invalid LLM output: {str(e)}") 
+            # Parse and validate the response
+            try:
+                return self._validate_yaml(response["content"])
+            except (yaml.YAMLError, KeyError, InvalidOutputError) as e:
+                raise InvalidOutputError("Invalid YAML in LLM response")
+        except InvalidOutputError:
+            raise
+        except Exception as e:
+            raise InvalidOutputError("Failed to generate tailored resume")
+
+
+__all__ = [
+    'LLMClient',
+    'ResumeTailor',
+    'ResumeTailorError',
+    'InvalidOutputError',
+] 
