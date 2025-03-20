@@ -197,21 +197,22 @@ Remember:
             "company", "title", "summary",
             "responsibilities", "requirements",
             "technical_skills", "non_technical_skills",
-            "ats_keywords", "is_complete", "truncation_note"
+            "ats_keywords", "is_complete"
         ]
         
         # Check all required fields exist
         if not all(field in data for field in required_fields):
             return False
             
-        # Check all fields have non-empty values
-        if any(not data[field] for field in required_fields if field not in ["is_complete", "truncation_note"]):
+        # Check essential fields have non-empty values
+        essential_fields = ["company", "title", "summary"]
+        if any(not data[field] for field in essential_fields):
             return False
             
-        # Check lists have at least 2 items
+        # Check lists have at least 1 item
         list_fields = ["responsibilities", "requirements", "technical_skills", 
                       "non_technical_skills", "ats_keywords"]
-        if any(not isinstance(data[field], list) or len(data[field]) < 2 
+        if any(not isinstance(data[field], list) or len(data[field]) < 1 
                for field in list_fields):
             return False
             
@@ -219,8 +220,8 @@ Remember:
         if not isinstance(data["is_complete"], bool):
             return False
             
-        # Check truncation_note is string
-        if not isinstance(data["truncation_note"], str):
+        # Check truncation_note is string or None
+        if "truncation_note" in data and not isinstance(data["truncation_note"], (str, type(None))):
             return False
             
         return True 
