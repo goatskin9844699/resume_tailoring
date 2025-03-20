@@ -1,12 +1,62 @@
 """YAML parsing module for resume-tailor."""
 
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
+import yaml
+from pathlib import Path
+
+
+class Title(BaseModel):
+    """Job title information."""
+    name: str
+    startdate: str
+    enddate: str
+
+
+class Experience(BaseModel):
+    """Work experience information."""
+    company: str
+    skip_name: bool
+    location: str
+    titles: List[Title]
+    highlights: List[str]
+
+
+class Education(BaseModel):
+    """Education information."""
+    name: str
+    school: str
+    startdate: str
+    enddate: str
+    highlights: List[str]
+
+
+class Publication(BaseModel):
+    """Publication information."""
+    authors: str
+    title: str
+    conference: str
+    location: str
+    date: str
+
+
+class SkillCategory(BaseModel):
+    """Skill category information."""
+    category: str
+    skills: List[str]
 
 
 class Resume(BaseModel):
     """Resume data model."""
-    pass
+    editing: bool
+    debug: bool
+    basic: Dict[str, Any]
+    objective: str
+    education: List[Education]
+    experiences: List[Experience]
+    projects: List[Any]
+    publications: List[Publication]
+    skills: List[SkillCategory]
 
 
 class ResumeParser:
@@ -25,7 +75,12 @@ class ResumeParser:
         Raises:
             ParserError: If there's an error parsing the file
         """
-        pass
+        try:
+            with open(file_path, 'r') as f:
+                data = yaml.safe_load(f)
+            return Resume(**data)
+        except Exception as e:
+            raise Exception(f"Failed to parse resume: {str(e)}")
 
     def save_tailored_resume(self, resume: Resume, file_path: str) -> None:
         """
@@ -38,4 +93,8 @@ class ResumeParser:
         Raises:
             ParserError: If there's an error saving the file
         """
-        pass 
+        try:
+            with open(file_path, 'w') as f:
+                yaml.dump(resume.model_dump(), f, default_flow_style=False)
+        except Exception as e:
+            raise Exception(f"Failed to save resume: {str(e)}") 
