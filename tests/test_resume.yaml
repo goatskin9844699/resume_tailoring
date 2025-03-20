@@ -1,0 +1,86 @@
+editing: false
+debug: false
+basic:
+  name: John Doe
+  address: New York, NY, USA
+  email: john.doe@example.com
+  phone: +1 (555) 123-4567
+  websites: ["https://johndoe.dev"]
+
+objective: Senior Software Engineer with 5+ years of experience in full-stack development, specializing in Python and JavaScript. Passionate about building scalable applications and mentoring junior developers.
+
+education:
+  - name: MSc Computer Science
+    school: Example University
+    startdate: 09/2015
+    enddate: 06/2017
+    highlights:
+      - "Thesis: \"Distributed Systems in Cloud Computing\""
+      - "Relevant course work: algorithms, distributed systems, cloud computing"
+  - name: BSc Computer Science
+    school: Example College
+    startdate: 09/2011
+    enddate: 06/2015
+    highlights:
+      - "Thesis: \"Web Application Security\""
+      - "Relevant course work: programming, databases, networks"
+
+experiences:
+- company: TechCorp
+  skip_name: false
+  location: New York, USA
+  titles:
+  - name: Senior Software Engineer
+    startdate: 01/2020
+    enddate: present
+  highlights:
+      - Led development of microservices architecture
+      - Implemented CI/CD pipeline
+      - Mentored junior developers
+
+- company: StartUp Inc
+  skip_name: false
+  location: San Francisco, USA
+  titles:
+  - name: Software Engineer
+    startdate: 06/2017
+    enddate: 12/2019
+  highlights:
+      - Developed REST APIs
+      - Improved test coverage
+      - Optimized database queries
+
+projects:
+  - name: Personal Portfolio
+    description: "A portfolio website built with React and Node.js"
+    technologies: ["React", "Node.js", "MongoDB"]
+    url: "https://portfolio.example.com"
+
+publications:
+  - authors: "John Doe, Jane Smith"
+    title: "Modern Web Development Practices"
+    conference: "WebDev Conference 2023"
+    location: "San Francisco, USA"
+    date: "2023"
+
+skills:
+  - category: Technical
+    skills:
+      - Python
+      - JavaScript
+      - React
+      - Node.js
+      - Docker
+      - AWS
+      - Git
+      - SQL
+      - REST APIs
+      - Microservices
+      
+  - category: Non-technical
+    skills:
+      - Team Leadership
+      - Project Management
+      - Technical Writing
+      - Problem Solving
+      - Communication 
