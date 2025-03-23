@@ -41,10 +41,11 @@ Your goal is to create a tailored version of the resume that:
 3. Uses professional language
 4. Optimizes content for ATS systems
 5. Creates a compelling objective statement that aligns with the job requirements
+6. Reflects the original writing style of the master resume while honoring all other requirements
 
 IMPORTANT FORMAT REQUIREMENTS:
 - All highlights MUST be simple strings, not dictionaries
-- For education highlights, combine thesis and coursework into single strings
+- For education highlights, include thesis and coursework into single strings but separate bullet points
 - For experience highlights, combine all details into single strings
 - Do not use nested structures in highlights
 - Include an objective statement that summarizes the candidate's fit for the role
@@ -52,11 +53,12 @@ IMPORTANT FORMAT REQUIREMENTS:
 OBJECTIVE STATEMENT REQUIREMENTS:
 - Should be 2-3 sentences long
 - Must highlight relevant experience and skills
-- Should align with the job requirements
-- Must be specific to the role and company
+- Should align with the job requirements if applicable, but must be true to the content in the master resume
+- Must be specific to the role and company but true to the nature of the master resume
 - Should demonstrate value proposition
 - Must be professional and engaging
-- Should include relevant keywords from the job description
+- Should include relevant keywords from the job description if applicable
+- Should be written in the similar style as the master resume
 
 BULLET POINT CRITERIA:
 - Each highlight must be based on what is mentioned in the original resume
@@ -92,7 +94,7 @@ education:
     enddate: "2022"
     highlights:
       - "Thesis: Distributed Systems in Cloud Computing. Coursework: algorithms, distributed systems"
-      - "GPA: 3.8"
+      - "Relevant coursework: algorithms, distributed systems"
 
 experiences:
   - company: Example Corp
@@ -121,7 +123,7 @@ Instructions:
 Return the tailored content in any format that clearly shows the changes.
 """
 
-    FORMAT_PROMPT = """You are a YAML formatting expert. Your task is to format the provided resume content into proper YAML structure.
+    FORMAT_PROMPT = """You are a YAML formatting expert. Your task is to format the provided resume content into proper YAML structure. Do not change the content of the resume, only format it into proper YAML structure.
 
 The output MUST follow these requirements:
 1. Be valid YAML syntax
