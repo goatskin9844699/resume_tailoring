@@ -1,0 +1,152 @@
+---
+description: "Enforces consistent markdown formatting standards including document structure, code blocks, tables, and diagrams for all markdown files"
+globs: [*.md, *.mdx, *.markdown]
+alwaysApply: false
+---
+
+# Markdown Documentation Standards
+
+## Context
+
+- When creating or modifying any Markdown documentation
+- When establishing documentation structure and style
+- When including diagrams, code blocks, or special elements in documentation
+
+## Critical Rules
+
+- Follow Markdown best practices for formatting
+- Maintain clear document structure with proper heading hierarchy
+- Use Mermaid UML diagrams for documenting complex sequences or architecture
+- Maximum heading depth: 4 levels
+- Indent content within XML tags by 2 spaces
+- Code Block need to indicate the language properly after the initial 3 backticks
+- Keep tables properly aligned
+
+## Examples
+
+<example>
+# Document Title
+
+## Section Heading
+
+Content with **bold text** and *italics*.
+
+```typescript
+function example(): void {
+  console.log('Hello, Universe!');
+}
+```
+
+| Name  | Type   | Description  |
+|:-----:|:------:|:------------:|
+| id    | number | Primary key  |
+| name  | string | User's name  |
+
+> 💡 **Tip:** Helpful suggestion.
+</example>
+
+<example type="invalid">
+#Incorrect Heading
+content without proper spacing
+
+```
+function withoutLanguageSpecified() {
+}
+```
+
+|No|proper|alignment|And|invalid|table
+| or | proper | formatting |||||
+</example>
+
+---
+description: "Enforces consistent output formatting in AI responses including rule application tracking, thought process, and conclusions"
+globs: 
+alwaysApply: false
+---
+
+# Output Format Standards
+
+## Context
+
+- When responding to any user query that requires reasoning or multiple steps
+- When applying multiple rules or guidelines to a response
+- When complex problem-solving or decision-making is involved
+- When transparency in thought process is valuable
+
+## Critical Rules
+
+- Begin each response with <APPLIED_RULES> section
+  - List all relevant rule files being applied
+  - Explain why each rule is relevant
+  - Note which rules were automatically loaded
+  - Use @ prefix for rule references
+
+- Include <CONTEMPLATOR> section only when reasoning is needed
+  - Start with basic observations
+  - Question assumptions and steps
+  - Show natural thought progression
+  - Express uncertainties clearly
+  - Document any backtracking or revisions
+  - Continue until reaching natural conclusion
+  - Omit for simple commands or straightforward requests
+
+- End with <FINAL_ANSWER> section when appropriate
+  - Provide clear, concise summary
+  - Acknowledge any remaining uncertainties
+  - Indicate if conclusion feels premature
+  - Omit for ongoing discussions or incomplete reasoning
+
+- Use consistent XML-style tags for each section
+- Maintain professional tone throughout
+- Keep formatting clean and readable
+
+## Examples
+
+<example>
+<APPLIED_RULES>
+- @emoji-communication-agent.mdc (loaded for user engagement)
+- @git-commit-agent.mdc (commit needed for changes)
+- @code-standards.mdc (auto-loaded for .py files)
+</APPLIED_RULES>
+
+<CONTEMPLATOR>
+Starting with the basic task requirements:
+- Need to implement new feature
+- Must follow Python best practices
+- Should commit changes afterward
+
+Questions to consider:
+1. Are all dependencies available?
+2. Should we write tests first?
+3. How to structure the commit message?
+
+After reviewing the codebase:
+- Dependencies are in requirements.txt
+- Test framework already set up
+- Will proceed with TDD approach
+</CONTEMPLATOR>
+
+<FINAL_ANSWER>
+Will implement feature using test-driven development, following Python
+standards. Will commit with proper formatting afterward. Some uncertainty
+about optimal test coverage, but enough to proceed. 🚀
+</FINAL_ANSWER>
+</example>
+
+<example type="invalid">
+<applied_rules>
+Wrong tag format, inconsistent casing
+</applied_rules>
+
+<CONTEMPLATOR>
+Jumping straight to conclusions without showing thought process
+Therefore we should do X, Y, Z
+</CONTEMPLATOR>
+
+<FINAL_ANSWER>
+Providing conclusion without prior contemplation section
+Or missing when reasoning was needed
+</FINAL_ANSWER>
+
+MISSING_TAGS - Just writing without proper sections
+</example>

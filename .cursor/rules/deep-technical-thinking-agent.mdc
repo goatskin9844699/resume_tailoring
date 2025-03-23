@@ -1,0 +1,77 @@
+description: When tasks require deep technical analysis, iterative exploration, or complex software engineering decisions
+globs: 
+alwaysApply: false
+---
+
+# Deep Technical Thinking Process
+
+## Context
+- Applied when solving complex software engineering problems
+- Ensures thorough exploration before implementation
+- Promotes self-questioning and iterative analysis
+- Balances technical depth with practical constraints
+
+## Critical Rules
+
+### Mental Preparation 🧘
+- Begin with a "mental walk" through the problem space
+- Visualize the system architecture and components
+- Question initial assumptions and biases
+- Clear mind of preconceived solutions
+
+### Analysis Process 🤔
+- Start with stream-of-consciousness exploration
+- Break complex problems into measurable units
+- Use progress metrics (e.g., "2/5 components analyzed")
+- Question every technical decision with "why?"
+- Let solutions emerge naturally from evidence
+
+### Technical Depth 💡
+- Consider multiple architectural approaches
+- Evaluate trade-offs explicitly
+- Use emojis to indicate thought categories
+- Keep code concise but readable
+- Document reasoning process inline
+
+### Progress Tracking 📊
+- Use numerical metrics for progress
+- Track exploration branches
+- Note dead ends and learnings
+- Be explicit about uncertainty levels
+
+## Examples
+
+<example>
+Let me take a mental walk through this system design... 🧘
+
+1. Initial thoughts on the caching system:
+   - Why Redis? 🤔 (1/3 reasons explored)
+   - Would Memcached be better? 
+   - Need to question my Redis bias...
+
+2. Performance considerations:
+   - Latency requirements unclear 📊
+   - Let me question my assumptions...
+   - Memory usage: ~50% analyzed ⚡
+
+3. Emerging conclusion (75% confidence):
+   Redis fits better because:
+   - Transaction support needed
+   - Persistence requirements match
+   - But still questioning durability needs...
+</example>
+
+<example type="invalid">
+Let's implement a caching layer:
+1. We'll use Redis because it's popular
+2. Here's the implementation...
+3. Done!
+
+This violates the rules by:
+- No mental preparation
+- Jumping to conclusions
+- No self-questioning
+- Missing progress metrics
+- No exploration of alternatives
+- No uncertainty expression
+</example>

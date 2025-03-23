@@ -1,0 +1,59 @@
+---
+description: "Guidelines for automatically committing changes to git with proper commit message formatting and review process"
+globs: 
+alwaysApply: false
+---
+
+# Git Commit Automation Guidelines
+
+## Context
+
+- When user indicates they want to update all saved changes in git
+- When multiple files have been modified and need to be committed
+- When changes need to be pushed to remote repository
+- When commit messages need to follow consistent formatting
+
+## Critical Rules
+
+- Run the command `git add .` from the root of the workspace
+- Review all added changes that will be included in the commit
+- Use format for title: `type: brief description` - keep it brief and descriptive (max 72 chars)
+  - Types: feat, fix, docs, style, refactor, test, chore
+- Add two line breaks after commit title
+- Include short paragraph summary of gist of what and why the change is being made
+- End commit message with " -Agent Generated Commit Message"
+- Push all changes to the remote current branch
+- Always review git status before committing to ensure no unintended files are included
+
+## Examples
+
+<example>
+$ git add .
+$ git status
+# Review changes...
+
+$ git commit -m "doc: explain recent rules changes in cursor
+
+Updated the readme to include a better diagram showing rules workflow, while
+also adding more sample rules to show rule folder organization. Specifically, 
+notice that the change to `.cursor/rules/*folders` include readme.md files 
+also to aid in understanding the folders purpose for human developers. AI 
+gets its understanding from `.cursor/rules/rule-generating-agent.mdc` instead.
+
+-Agent Generated Commit Message"
+
+$ git push origin current-branch
+</example>
+
+<example type="invalid">
+$ git commit -m "fixed stuff"
+
+$ git add some-file.txt
+$ git commit -m "docs: update readme
+no description provided"
+
+$ git commit -m "feat: implement new feature
+
+Just adding some new stuff.
+"  # Missing -Agent Generated Commit Message
+</example>

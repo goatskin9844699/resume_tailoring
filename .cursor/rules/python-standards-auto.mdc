@@ -1,0 +1,106 @@
+---
+description: Python Development Standards
+globs: *.py
+alwaysApply: false
+---
+description: 
+globs: *.py
+alwaysApply: false
+---
+
+# Python Development Standards
+
+## Context
+- Enforces consistent Python development practices
+- Ensures code quality and maintainability
+- Standardizes testing and documentation
+- Manages dependencies and environments effectively
+
+## Critical Rules
+
+### Code Style and Structure
+- Follow PEP 8 and use Black formatter (line length: 88)
+- Use type hints for all functions
+- One class per file unless tightly coupled
+- Keep `__init__.py` files empty
+- Use relative imports within package, absolute for external
+
+### Naming and Documentation
+- Modules/Functions/Variables: lowercase_with_underscores
+- Classes: CapWords
+- Constants: UPPERCASE_WITH_UNDERSCORES
+- Private members: _prefix
+- Use Google-style docstrings for all public APIs
+
+### Testing Requirements
+- Write tests first (TDD)
+- Use pytest in tests/ directory
+- Maintain 90% minimum coverage
+- Isolate tests and mock external services
+- Test files must match test_*.py pattern
+
+### Environment Management
+- Use venv named .venv
+- Maintain requirements.txt with pinned versions
+- Separate dev/prod dependencies
+- Never commit virtual environment
+
+## Examples
+
+<example>
+# good_module.py
+from typing import List, Optional
+
+class UserManager:
+    """Manages user operations.
+    
+    Args:
+        db_connection: Database connection instance
+    """
+    def __init__(self, db_connection) -> None:
+        self._db = db_connection
+        
+    def get_user(self, user_id: int) -> Optional[dict]:
+        """Retrieves user by ID.
+        
+        Args:
+            user_id: The user's unique identifier
+            
+        Returns:
+            User data dictionary or None if not found
+        """
+        return self._db.query_user(user_id)
+
+# test_good_module.py
+def test_user_manager_get_user():
+    from unittest.mock import Mock
+    from good_module import UserManager
+    
+    mock_db = Mock()
+    manager = UserManager(mock_db)
+    manager.get_user(1)
+    mock_db.query_user.assert_called_once_with(1)
+</example>
+
+<example type="invalid">
+# bad_module.py
+def process_data(d):  # No type hints
+    if d == None:  # Wrong comparison
+        return
+    
+    for i in range(len(d)):  # Non-pythonic
+        print (d[i])  # Extra space
+        
+class Helper:  # No docstring
+    def do_something():  # Missing self
+        pass
+
+# test_bad_module.py
+from bad_module import *  # Global imports
+import pytest
+
+def test_everything():  # Not isolated
+    # Multiple assertions without clear purpose
+    assert process_data([1,2,3])
+    assert Helper().do_something()
+</example>

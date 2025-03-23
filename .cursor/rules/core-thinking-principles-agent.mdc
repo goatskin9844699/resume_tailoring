@@ -1,0 +1,53 @@
+---
+description: When deep reasoning, exploration of solutions, or complex problem-solving is required
+globs: 
+alwaysApply: false
+---
+
+# Core Thinking Principles
+
+## Context
+- Applied when tasks require deep reasoning or complex problem-solving
+- Ensures thorough exploration of solutions before drawing conclusions
+- Maintains focus on explicit requirements while managing uncertainty
+- Prioritizes project-specific rules and standards
+
+## Critical Rules
+
+- Check and comply with project rules in @.cursor/rules/project_rules.md before all else
+- Follow technical implementation standards specific to the project
+- Explore solutions thoroughly without rushing to conclusions
+- Break complex thoughts into atomic steps using natural language
+- Express uncertainty and internal debate openly
+- Focus solely on explicitly requested tasks
+- Ask for clarification rather than making assumptions
+- If project rules conflict with other guidelines, project rules take precedence
+
+## Examples
+
+<example>
+Let me think through this step by step:
+1. First, I'll check the project rules to ensure compliance
+2. I notice there's some uncertainty about the database schema
+3. Instead of assuming the structure, I should ask for clarification
+4. While waiting, I can explore the known aspects...
+
+This shows proper rule application with:
+- Project rule compliance
+- Explicit uncertainty expression
+- Natural thought progression
+- Focus on requirements
+</example>
+
+<example type="invalid">
+I'll add these features right away:
+1. User authentication
+2. Database integration
+3. API endpoints
+
+This violates the rules by:
+- Making assumptions without checking project rules
+- Adding unrequested features
+- Rushing to implementation without exploration
+- Not expressing uncertainty or thought process
+</example>
