@@ -6,7 +6,9 @@ from ..llm.client import LLMClient
 from ..exceptions import ExtractorError
 from .scraper import WebScraper
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 class JobDescriptionExtractor:
     """Extracts structured data from job descriptions."""
@@ -55,34 +57,51 @@ class JobDescriptionExtractor:
             
             # Get structured data from LLM
             llm_response = self.llm.generate(prompt)
-            print(f"LLM response: {llm_response}")
+            logger.debug(f"Raw LLM response: {llm_response}")
             
-            # Handle both wrapped and unwrapped responses
-            if isinstance(llm_response, dict):
-                if "content" in llm_response and isinstance(llm_response["content"], str):
-                    try:
-                        job_data = json.loads(llm_response["content"])
-                    except json.JSONDecodeError:
-                        raise ExtractorError("Invalid JSON response from LLM")
-                elif "response" in llm_response and isinstance(llm_response["response"], str):
-                    try:
-                        job_data = json.loads(llm_response["response"])
-                    except json.JSONDecodeError:
-                        raise ExtractorError("Invalid JSON response from LLM")
-                else:
-                    job_data = llm_response
-            else:
-                raise ExtractorError("Invalid response format from LLM")
+            # Parse and validate JSON response
+            job_data = self._parse_llm_response(llm_response)
             
-            # Validate response
-            if not job_data or not self._validate_job_data(job_data):
-                print(f"Invalid job data: {job_data}")
+            # Validate the structure and content
+            if not self._validate_job_data(job_data):
+                logger.error(f"Invalid job data structure: {job_data}")
                 raise ExtractorError("Invalid or incomplete job description data")
                 
             return job_data
             
         except Exception as e:
+            logger.error(f"Error extracting job description: {str(e)}")
             raise ExtractorError(f"Failed to extract job description: {str(e)}")
+
+    def _parse_llm_response(self, response: Dict) -> Dict:
+        """
+        Parse and validate the LLM response to ensure proper JSON format.
+        
+        Args:
+            response: Raw response from LLM
+            
+        Returns:
+            Parsed and validated JSON data
+            
+        Raises:
+            ExtractorError: If response cannot be parsed as valid JSON
+        """
+        try:
+            # Handle different response formats
+            if isinstance(response, dict):
+                if "content" in response and isinstance(response["content"], str):
+                    return json.loads(response["content"])
+                elif "response" in response and isinstance(response["response"], str):
+                    return json.loads(response["response"])
+                elif all(key in response for key in ["company", "title", "summary"]):
+                    return response
+                    
+            logger.error(f"Unexpected response format: {response}")
+            raise ExtractorError("Invalid response format from LLM")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error: {str(e)}")
+            raise ExtractorError(f"Invalid JSON response from LLM: {str(e)}")
 
     def _is_valid_url(self, url: str) -> bool:
         """
@@ -110,7 +129,7 @@ class JobDescriptionExtractor:
         Returns:
             Formatted prompt for the LLM
         """
-        return f"""You are a precise job description parser. Your task is to extract and structure all information from the job posting while maintaining perfect accuracy and completeness.
+        return f"""You are a precise job description parser. Your task is to extract and structure all information from the job posting into VALID JSON format. Accuracy and proper JSON formatting are critical.
 
 Think of yourself as a high-precision scanner that:
 - Captures every detail exactly as written
@@ -121,14 +140,15 @@ Think of yourself as a high-precision scanner that:
 Job Posting Content:
 {content}
 
-Your goal is to create a complete, accurate representation of this job posting. When extracting information:
+Your goal is to create a complete, accurate representation of this job posting in valid JSON format. When extracting information:
 - Keep every technical detail exactly as written (e.g., "Python 3.8+" not just "Python")
 - Preserve all version numbers, frameworks, and specifications
 - Include every requirement, even if it seems redundant
 - Maintain the exact wording of all qualifications
 - Keep all bullet points and nested information
+- Ensure the output is valid JSON that can be parsed by json.loads()
 
-Output Format:
+Required JSON Format:
 {{
     "company": "Company name",
     "title": "Job title",
@@ -138,50 +158,59 @@ Output Format:
     "technical_skills": ["List of technical skills"],
     "non_technical_skills": ["List of non-technical skills"],
     "ats_keywords": ["Keywords for ATS"],
-    "is_complete": boolean,  # Set to false if content appears truncated
-    "truncation_note": "string"  # Describe what appears to be missing
+    "is_complete": boolean,
+    "truncation_note": "string or null"
 }}
 
-Examples of Good Extraction (Complete Content):
+Examples of Good JSON Extraction:
 
-Good:
-Original: "Must have 5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
-Extracted: "5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
+Good (Valid JSON):
+{{
+    "company": "TechCorp",
+    "title": "Senior Python Developer",
+    "summary": "Looking for an experienced Python developer...",
+    "responsibilities": [
+        "Lead Python application development",
+        "Design system architecture"
+    ],
+    "requirements": [
+        "5+ years Python experience",
+        "Strong system design skills"
+    ],
+    "technical_skills": [
+        "Python 3.8+",
+        "Django 4.2+"
+    ],
+    "non_technical_skills": [
+        "Leadership",
+        "Communication"
+    ],
+    "ats_keywords": [
+        "python",
+        "django",
+        "senior developer"
+    ],
+    "is_complete": true,
+    "truncation_note": null
+}}
 
-Bad:
-Original: "Must have 5+ years of experience with Python 3.8+ and Django 4.2+, including experience with Django REST framework and PostgreSQL 14+"
-Extracted: "Python and Django experience"  # Lost critical version information
-
-Good:
-Original: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
-Extracted: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
-
-Bad:
-Original: "Experience with microservices architecture, including containerization (Docker) and orchestration (Kubernetes)"
-Extracted: "Microservices experience"  # Lost specific technologies
-
-Example of Good Extraction (Truncated Content):
-Original: "As a Senior Developer, you'll be responsible for... [content ends abruptly]"
-Extracted: {{
-    "title": "Senior Developer",
-    "summary": "Role description appears truncated",
-    "responsibilities": ["Content appears truncated"],
-    "requirements": ["Must infer from available content"],
-    "is_complete": false,
-    "truncation_note": "Content ends abruptly after initial role description. Missing detailed responsibilities and requirements."
+Bad (Invalid JSON):
+{{
+    'company': 'TechCorp',  # Single quotes are not valid JSON
+    title: "Senior Developer",  # Missing quotes around key
+    "requirements": ["Python" "Django"]  # Missing comma in array
 }}
 
 Remember:
-- Extract all available information even if content is truncated
-- Set is_complete to false if you detect any truncation
-- Describe missing sections in truncation_note
-- Provide as much detail as possible from available content
-- Never make up or infer missing information
-- You are a precision tool - accuracy is everything
-- Include everything you see, even if it seems redundant
-- If content appears truncated, note what might be missing
-- Preserve the exact wording of all technical specifications
-- Maintain the original context of all requirements"""
+- Output MUST be valid JSON that can be parsed by json.loads()
+- Use double quotes for strings, not single quotes
+- Include commas between array items and object properties
+- Boolean values must be lowercase (true/false)
+- null must be lowercase
+- Don't include comments in the JSON
+- Don't include trailing commas
+- Ensure all required fields are present
+- Arrays and strings must be properly quoted and escaped"""
 
     def _validate_job_data(self, data: Dict) -> bool:
         """
@@ -193,35 +222,48 @@ Remember:
         Returns:
             True if valid, False otherwise
         """
-        required_fields = [
-            "company", "title", "summary",
-            "responsibilities", "requirements",
-            "technical_skills", "non_technical_skills",
-            "ats_keywords", "is_complete"
-        ]
-        
-        # Check all required fields exist
-        if not all(field in data for field in required_fields):
-            return False
+        try:
+            # Required fields with their types
+            field_types = {
+                "company": str,
+                "title": str,
+                "summary": str,
+                "responsibilities": list,
+                "requirements": list,
+                "technical_skills": list,
+                "non_technical_skills": list,
+                "ats_keywords": list,
+                "is_complete": bool,
+                "truncation_note": (str, type(None))
+            }
             
-        # Check essential fields have non-empty values
-        essential_fields = ["company", "title", "summary"]
-        if any(not data[field] for field in essential_fields):
-            return False
+            # Check all required fields exist and have correct types
+            for field, expected_type in field_types.items():
+                if field not in data:
+                    logger.error(f"Missing required field: {field}")
+                    return False
+                    
+                if not isinstance(data[field], expected_type):
+                    if not (field == "truncation_note" and data[field] is None):
+                        logger.error(f"Invalid type for {field}: expected {expected_type}, got {type(data[field])}")
+                        return False
             
-        # Check lists have at least 1 item
-        list_fields = ["responsibilities", "requirements", "technical_skills", 
-                      "non_technical_skills", "ats_keywords"]
-        if any(not isinstance(data[field], list) or len(data[field]) < 1 
-               for field in list_fields):
-            return False
+            # Check lists have at least 1 item and contain only strings
+            list_fields = ["responsibilities", "requirements", "technical_skills", 
+                          "non_technical_skills", "ats_keywords"]
+            for field in list_fields:
+                if not data[field] or not all(isinstance(item, str) for item in data[field]):
+                    logger.error(f"Invalid list content in {field}")
+                    return False
             
-        # Check is_complete is boolean
-        if not isinstance(data["is_complete"], bool):
-            return False
+            # Check essential fields are non-empty strings
+            for field in ["company", "title", "summary"]:
+                if not data[field].strip():
+                    logger.error(f"Empty string in required field: {field}")
+                    return False
             
-        # Check truncation_note is string or None
-        if "truncation_note" in data and not isinstance(data["truncation_note"], (str, type(None))):
-            return False
+            return True
             
-        return True 
+        except Exception as e:
+            logger.error(f"Validation error: {str(e)}")
+            return False 
