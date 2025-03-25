@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 from resume_tailor.extractor.extractor import JobDescriptionExtractor
 from resume_tailor.exceptions import ExtractorError
 from resume_tailor.llm.client import LLMClient
+import json
 
 
 @pytest.fixture
@@ -32,7 +33,7 @@ def mock_job_data():
         "non_technical_skills": ["Communication", "Leadership"],
         "ats_keywords": ["python", "docker", "agile"],
         "is_complete": True,
-        "truncation_note": ""
+        "truncation_note": None
     }
 
 
@@ -64,9 +65,8 @@ def test_init(extractor, mock_llm):
 
 def test_extract_success(extractor, mock_llm, mock_job_data, mock_content):
     """Test successful job description extraction."""
-    # Mock the scraper to return our test content
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
-        mock_llm.generate.return_value = mock_job_data
+        mock_llm.generate.return_value = {"content": json.dumps(mock_job_data)}
         
         result = extractor.extract("https://example.com/job")
         
@@ -101,20 +101,34 @@ def test_extract_empty_response(extractor, mock_llm, mock_content):
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
         mock_llm.generate.return_value = {}
         
-        with pytest.raises(ExtractorError, match="Invalid or incomplete job description data"):
+        with pytest.raises(ExtractorError, match="Invalid response format from LLM"):
+            extractor.extract("https://example.com/job")
+
+
+def test_extract_invalid_json_response(extractor, mock_llm, mock_content):
+    """Test handling of invalid JSON responses."""
+    with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
+        mock_llm.generate.return_value = {"content": "invalid json"}
+        
+        with pytest.raises(ExtractorError, match="Invalid JSON response from LLM"):
             extractor.extract("https://example.com/job")
 
 
 def test_extract_wrapped_json_response(extractor, mock_llm, mock_content):
     """Test handling of wrapped JSON responses."""
     wrapped_response = {
-        "response": '{"company": "Test Corp", "title": "Developer", "summary": "Test role", '
-                   '"responsibilities": ["Task 1", "Task 2"], "requirements": ["Req 1", "Req 2"], '
-                   '"technical_skills": ["Skill 1", "Skill 2"], '
-                   '"non_technical_skills": ["Soft 1", "Soft 2"], '
-                   '"ats_keywords": ["Key 1", "Key 2"], '
-                   '"is_complete": true, '
-                   '"truncation_note": ""}'
+        "response": json.dumps({
+            "company": "Test Corp",
+            "title": "Developer",
+            "summary": "Test role",
+            "responsibilities": ["Task 1", "Task 2"],
+            "requirements": ["Req 1", "Req 2"],
+            "technical_skills": ["Skill 1", "Skill 2"],
+            "non_technical_skills": ["Soft 1", "Soft 2"],
+            "ats_keywords": ["Key 1", "Key 2"],
+            "is_complete": True,
+            "truncation_note": None
+        })
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
@@ -128,29 +142,67 @@ def test_extract_wrapped_json_response(extractor, mock_llm, mock_content):
         assert len(result["requirements"]) >= 2
 
 
-def test_extract_invalid_wrapped_json(extractor, mock_llm, mock_content):
-    """Test handling of invalid wrapped JSON responses."""
-    wrapped_response = {
-        "response": "Not a valid JSON string"
+def test_extract_invalid_field_type(extractor, mock_llm, mock_content):
+    """Test handling of invalid field types in response."""
+    invalid_data = {
+        "company": "Test Corp",
+        "title": "Developer",
+        "summary": "Test role",
+        "responsibilities": "Not a list",  # Should be a list
+        "requirements": ["Req 1", "Req 2"],
+        "technical_skills": ["Skill 1", "Skill 2"],
+        "non_technical_skills": ["Soft 1", "Soft 2"],
+        "ats_keywords": ["Key 1", "Key 2"],
+        "is_complete": "true",  # Should be boolean
+        "truncation_note": None
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
-        mock_llm.generate.return_value = wrapped_response
+        mock_llm.generate.return_value = invalid_data
         
-        with pytest.raises(ExtractorError, match="Invalid JSON response from LLM"):
+        with pytest.raises(ExtractorError, match="Invalid or incomplete job description data"):
             extractor.extract("https://example.com/job")
 
 
-def test_extract_incomplete_data(extractor, mock_llm, mock_content):
-    """Test handling of incomplete job data."""
-    incomplete_data = {
-        "company": "Test Corp",
-        "title": "Developer"
-        # Missing other required fields
+def test_extract_empty_required_field(extractor, mock_llm, mock_content):
+    """Test handling of empty required fields."""
+    invalid_data = {
+        "company": "",  # Empty required field
+        "title": "Developer",
+        "summary": "Test role",
+        "responsibilities": ["Task 1"],
+        "requirements": ["Req 1"],
+        "technical_skills": ["Skill 1"],
+        "non_technical_skills": ["Soft 1"],
+        "ats_keywords": ["Key 1"],
+        "is_complete": True,
+        "truncation_note": None
     }
     
     with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
-        mock_llm.generate.return_value = incomplete_data
+        mock_llm.generate.return_value = invalid_data
+        
+        with pytest.raises(ExtractorError, match="Invalid or incomplete job description data"):
+            extractor.extract("https://example.com/job")
+
+
+def test_extract_non_string_list_items(extractor, mock_llm, mock_content):
+    """Test handling of non-string items in lists."""
+    invalid_data = {
+        "company": "Test Corp",
+        "title": "Developer",
+        "summary": "Test role",
+        "responsibilities": ["Task 1", 2],  # Contains non-string item
+        "requirements": ["Req 1"],
+        "technical_skills": ["Skill 1"],
+        "non_technical_skills": ["Soft 1"],
+        "ats_keywords": ["Key 1"],
+        "is_complete": True,
+        "truncation_note": None
+    }
+    
+    with patch.object(extractor.scraper, 'fetch_content', return_value=mock_content):
+        mock_llm.generate.return_value = invalid_data
         
         with pytest.raises(ExtractorError, match="Invalid or incomplete job description data"):
             extractor.extract("https://example.com/job")

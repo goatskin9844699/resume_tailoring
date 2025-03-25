@@ -1,0 +1,67 @@
+---
+description: Git Development Workflow 
+globs: 
+alwaysApply: true
+---
+
+# Git Development Workflow
+
+## Context
+
+- When implementing new features or fixes
+- When making any significant code changes
+- Ensures consistent development process
+- Maintains code quality and review standards
+
+## Critical Rules
+
+1. Branch Management:
+   - Start by checking out main branch: `git checkout main`
+   - Pull latest changes: `git pull origin main`
+   - Create feature branch with descriptive name: `git checkout -b feature/descriptive-name`
+
+2. Implementation:
+   - Make focused, atomic commits
+   - Follow existing code style and patterns
+   - Add/update unit tests for new functionality
+   - Ensure all tests pass before proceeding
+
+3. Quality Assurance:
+   - Run complete test suite
+   - Verify new tests cover added functionality
+   - Check for any linting errors
+   - Test the feature manually if applicable
+
+4. Code Review Preparation:
+   - Push branch to remote: `git push -u origin feature/branch-name`
+   - Create detailed PR with:
+     - Clear title describing the change
+     - Detailed description of changes made
+     - Testing performed
+     - Related issues or context
+   - Request appropriate reviewers
+
+## Examples
+
+<example>
+# ✅ Good Workflow
+git checkout main
+git pull origin main
+git checkout -b feature/add-json-validation
+# Make changes
+# Add tests
+pytest tests/
+git add .
+git commit -m "feat: add JSON validation"
+git push -u origin feature/add-json-validation
+# Create detailed PR
+</example>
+
+<example type="invalid">
+# ❌ Poor Workflow
+# Making changes directly in main
+git checkout main
+# No tests added
+git commit -am "changes"
+git push
+</example>
