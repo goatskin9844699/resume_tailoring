@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Protocol
 
 import yaml
+from pydantic import ValidationError
 from resume_tailor.resume_parser import ResumeParser
 from resume_tailor.models import Resume
 from resume_tailor.exceptions import InvalidOutputError
@@ -253,31 +254,32 @@ Return ONLY the raw YAML content, no markdown formatting or other text. Make sur
         """Initialize the Resume Tailor.
 
         Args:
-            llm_client: The LLM client to use for generating responses.
+            llm_client: LLM client to use for generating content.
         """
         self.llm_client = llm_client
 
     def _clean_yaml(self, yaml_str: str) -> str:
-        """Clean YAML string by removing markdown formatting.
+        """Clean YAML string by removing code blocks and extra whitespace.
 
         Args:
-            yaml_str: YAML string that might contain markdown formatting.
+            yaml_str: YAML string to clean.
 
         Returns:
             Cleaned YAML string.
         """
-        # Remove markdown code block markers
-        lines = yaml_str.strip().split('\n')
-        if lines[0].startswith('```'):
-            lines = lines[1:]
-        if lines[-1].startswith('```'):
-            lines = lines[:-1]
-        
-        # Remove language identifier if present
-        if lines[0].strip() in ['yaml', 'YAML']:
-            lines = lines[1:]
-            
-        return '\n'.join(lines).strip()
+        # Remove markdown code blocks if present
+        if yaml_str.startswith('```'):
+            # Remove opening code block
+            yaml_str = yaml_str.split('\n', 1)[1]
+            # Remove closing code block if present
+            if yaml_str.endswith('```'):
+                yaml_str = yaml_str[:-3]
+            # Remove language identifier if present
+            if yaml_str.startswith('yaml'):
+                yaml_str = yaml_str[4:]
+            yaml_str = yaml_str.strip()
+
+        return yaml_str
 
     def _validate_yaml(self, yaml_str: str) -> Resume:
         """Validate YAML content.
@@ -297,12 +299,16 @@ Return ONLY the raw YAML content, no markdown formatting or other text. Make sur
             data = yaml.safe_load(cleaned_yaml)
             if not isinstance(data, dict):
                 raise InvalidOutputError("YAML must contain a dictionary at the root level")
-            
+
             # Validate skills structure
             if "skills" in data and not isinstance(data["skills"], list):
                 raise InvalidOutputError("'skills' must be a list of skill categories")
-            
-            return Resume(**data)
+
+            try:
+                return Resume(**data)
+            except ValidationError as e:
+                raise InvalidOutputError("Invalid resume format")
+
         except yaml.YAMLError as e:
             raise InvalidOutputError(f"Invalid YAML syntax: {str(e)}")
 
@@ -336,7 +342,7 @@ Return ONLY the raw YAML content, no markdown formatting or other text. Make sur
                 content=tailored_content
             )
             format_response = self.llm_client.generate(format_prompt)
-            
+
             # Parse and validate the formatted YAML
             return self._validate_yaml(format_response["content"])
 
@@ -346,20 +352,18 @@ Return ONLY the raw YAML content, no markdown formatting or other text. Make sur
             raise InvalidOutputError("Failed to generate tailored resume")
 
     def save_tailored_resume(self, resume: Resume, file_path: str) -> None:
-        """Save a tailored resume to a YAML file.
+        """Save the tailored resume to a file.
 
         Args:
-            resume: Resume object to save
-            file_path: Path where to save the YAML file
-
-        Raises:
-            InvalidOutputError: If there's an error saving the file
+            resume: Resume object to save.
+            file_path: Path to save the resume to.
         """
-        try:
-            with open(file_path, 'w') as f:
-                yaml.dump(resume.model_dump(), f, default_flow_style=False)
-        except Exception as e:
-            raise InvalidOutputError(f"Failed to save resume: {str(e)}")
+        # Convert resume to dictionary
+        resume_dict = resume.model_dump()
+
+        # Save to file
+        with open(file_path, 'w') as f:
+            yaml.dump(resume_dict, f, sort_keys=False)
 
 
 __all__ = [
