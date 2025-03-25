@@ -1,7 +1,7 @@
 """Tests for the LLM-based scoring component."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import Mock
 
 from resume_tailor.scoring.llm_scorer import LLMScorer
 from resume_tailor.scoring.models import SectionScore, ScoringResult
@@ -10,7 +10,7 @@ from resume_tailor.scoring.models import SectionScore, ScoringResult
 @pytest.fixture
 def mock_llm_client():
     """Create a mock LLM client."""
-    client = AsyncMock()
+    client = Mock()
     return client
 
 
@@ -47,8 +47,7 @@ def sample_resume_content():
     }
 
 
-@pytest.mark.asyncio
-async def test_score_content_success(mock_llm_client, sample_job_description, sample_resume_content):
+def test_score_content_success(mock_llm_client, sample_job_description, sample_resume_content):
     """Test successful scoring of resume content."""
     # Mock LLM response
     mock_response = {
@@ -75,7 +74,7 @@ async def test_score_content_success(mock_llm_client, sample_job_description, sa
     scorer = LLMScorer(mock_llm_client)
 
     # Score content
-    result = await scorer.score_content(
+    result = scorer.score_content(
         sample_job_description,
         sample_resume_content
     )
@@ -95,11 +94,10 @@ async def test_score_content_success(mock_llm_client, sample_job_description, sa
     assert "Python" in exp1_score.matched_keywords
 
 
-@pytest.mark.asyncio
-async def test_score_content_empty_sections(mock_llm_client, sample_job_description):
+def test_score_content_empty_sections(mock_llm_client, sample_job_description):
     """Test scoring with empty resume content."""
     scorer = LLMScorer(mock_llm_client)
-    result = await scorer.score_content(
+    result = scorer.score_content(
         sample_job_description,
         {}
     )
@@ -111,14 +109,13 @@ async def test_score_content_empty_sections(mock_llm_client, sample_job_descript
     assert "error" in result.metadata
 
 
-@pytest.mark.asyncio
-async def test_score_content_invalid_response(mock_llm_client, sample_job_description, sample_resume_content):
+def test_score_content_invalid_response(mock_llm_client, sample_job_description, sample_resume_content):
     """Test handling of invalid LLM response."""
     # Mock invalid response
     mock_llm_client.generate.return_value = {"invalid": "format"}
 
     scorer = LLMScorer(mock_llm_client)
-    result = await scorer.score_content(
+    result = scorer.score_content(
         sample_job_description,
         sample_resume_content
     )
@@ -130,8 +127,7 @@ async def test_score_content_invalid_response(mock_llm_client, sample_job_descri
     assert "error" in result.metadata
 
 
-@pytest.mark.asyncio
-async def test_score_content_section_truncation(mock_llm_client, sample_job_description):
+def test_score_content_section_truncation(mock_llm_client, sample_job_description):
     """Test section text truncation."""
     # Create resume with long section
     long_resume = {
@@ -154,7 +150,7 @@ async def test_score_content_section_truncation(mock_llm_client, sample_job_desc
     }
 
     scorer = LLMScorer(mock_llm_client)
-    result = await scorer.score_content(
+    result = scorer.score_content(
         sample_job_description,
         long_resume,
         max_chars_per_section=100
@@ -165,8 +161,7 @@ async def test_score_content_section_truncation(mock_llm_client, sample_job_desc
     assert result.metadata["max_chars_per_section"] == 100
 
 
-@pytest.mark.asyncio
-async def test_score_content_specific_sections(mock_llm_client, sample_job_description, sample_resume_content):
+def test_score_content_specific_sections(mock_llm_client, sample_job_description, sample_resume_content):
     """Test scoring specific sections only."""
     # Mock LLM response
     mock_llm_client.generate.return_value = {
@@ -182,7 +177,7 @@ async def test_score_content_specific_sections(mock_llm_client, sample_job_descr
     }
 
     scorer = LLMScorer(mock_llm_client)
-    result = await scorer.score_content(
+    result = scorer.score_content(
         sample_job_description,
         sample_resume_content,
         sections=["experience1"]

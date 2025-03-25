@@ -121,14 +121,14 @@ Ensure all scores are between 0 and 1, and provide clear explanations for each s
 
         return True
 
-    async def score_content(
+    def score_content(
         self,
         job_description: str,
         resume_content: Dict,
         sections: Optional[List[str]] = None,
         max_chars_per_section: int = 500
     ) -> ScoringResult:
-        """Score resume content against job description using a single LLM call.
+        """Score resume content against job description.
 
         Args:
             job_description: Job description text.
@@ -172,7 +172,7 @@ Ensure all scores are between 0 and 1, and provide clear explanations for each s
 
         try:
             # Get LLM response
-            response = await self.llm_client.generate(prompt)
+            response = self.llm_client.generate(prompt)
             
             # Parse and validate response
             if not self._validate_llm_response(response):
