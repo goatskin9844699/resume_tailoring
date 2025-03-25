@@ -191,12 +191,12 @@ The refinement system processes scored content to create an optimized resume usi
 1. **Input Processing**
    - Scored content containing:
      - Original resume content
-     - Relevance scores and relationships
-     - Similar content mappings
+     - Relevance scores for each section
+     - Matched keywords and explanations
    - Job description for context and requirements
 
 2. **Content Organization**
-   - Combines similar experiences based on scoring results
+   - Uses relevance scores to prioritize content
    - Preserves strongest original phrasing and style
    - Maintains narrative flow and career progression
    - Optimizes section ordering by relevance
