@@ -1,5 +1,5 @@
 ---
-description: Git Development Workflow 
+description: 
 globs: 
 alwaysApply: true
 ---
@@ -34,11 +34,16 @@ alwaysApply: true
 
 4. Code Review Preparation:
    - Push branch to remote: `git push -u origin feature/branch-name`
-   - Create detailed PR with:
-     - Clear title describing the change
-     - Detailed description of changes made
-     - Testing performed
-     - Related issues or context
+   - Create detailed PR using GitHub CLI:
+     ```bash
+     gh pr create --title "type: concise description" \
+       --body $'## Changes Made\n\n- Change 1\n- Change 2\n\n## Testing\n- Test details'
+     ```
+   - PR Description Requirements:
+     - Use proper Markdown formatting with sections
+     - Include Changes Made, Testing, and Related Context sections
+     - Use `$'string'` syntax with `\n` for newlines when using GitHub CLI
+     - Double newlines (`\n\n`) for paragraph breaks
    - Request appropriate reviewers
 
 ## Examples
@@ -54,7 +59,8 @@ pytest tests/
 git add .
 git commit -m "feat: add JSON validation"
 git push -u origin feature/add-json-validation
-# Create detailed PR
+# Create detailed PR with proper formatting
+gh pr create --title "feat: add JSON validation" --body $'## Changes Made\n\n- Added JSON validation\n- Added tests\n\n## Testing\n- All tests passing'
 </example>
 
 <example type="invalid">
@@ -64,4 +70,6 @@ git checkout main
 # No tests added
 git commit -am "changes"
 git push
-</example>
+# PR with poor description
+gh pr create --title "updates" --body "made some changes"
+</example> 
