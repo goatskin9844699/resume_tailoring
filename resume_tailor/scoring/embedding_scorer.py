@@ -1,7 +1,7 @@
 """Embedding-based scoring component for resume content."""
 
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
@@ -44,29 +44,37 @@ class EmbeddingScorer:
         """
         if "highlights" in section:
             return " ".join(section["highlights"])
-        return str(section)
+        if "content" in section:
+            return section["content"]
+        return ""
 
     def score_content(
         self,
-        job_description: str,
-        resume_content: Dict,
-        sections: List[str] = None
+        sections: Dict[str, Dict],
+        sections_to_score: Optional[List[str]] = None,
+        job_description: Optional[str] = None
     ) -> ScoringResult:
-        """Score resume content against job description.
+        """Score resume content sections.
 
         Args:
-            job_description: Job description text.
-            resume_content: Resume content dictionary.
-            sections: List of sections to score. If None, scores all sections.
+            sections: Dictionary of resume sections to score.
+            sections_to_score: Optional list of section IDs to score. If None, scores all sections.
+            job_description: Optional job description to score against. If None, uses a neutral baseline.
 
         Returns:
             ScoringResult containing section scores.
         """
         start_time = time.time()
 
-        # Prepare job description
-        job_embedding = self.model.encode(
-            self._prepare_text(job_description),
+        # Use job description if provided, otherwise use a neutral baseline
+        if job_description:
+            reference_text = job_description
+        else:
+            # Use a neutral baseline that will give moderate scores
+            reference_text = "professional experience skills achievements"
+
+        reference_embedding = self.model.encode(
+            self._prepare_text(reference_text),
             convert_to_tensor=True
         )
 
@@ -76,8 +84,8 @@ class EmbeddingScorer:
         section_count = 0
 
         # Score each section
-        for section_id, section in resume_content.items():
-            if sections and section_id not in sections:
+        for section_id, section in sections.items():
+            if sections_to_score and section_id not in sections_to_score:
                 continue
 
             # Get section text
@@ -92,7 +100,7 @@ class EmbeddingScorer:
             )
 
             # Calculate similarity score
-            similarity = cos_sim(job_embedding, section_embedding).item()
+            similarity = cos_sim(reference_embedding, section_embedding).item()
             
             # Create section score
             section_scores[section_id] = SectionScore(
