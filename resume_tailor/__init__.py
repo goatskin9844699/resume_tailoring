@@ -17,6 +17,14 @@ from resume_tailor.resume_tailor import (
     LLMClient,
 )
 from resume_tailor.extractor import JobDescriptionExtractor
+from resume_tailor.scoring import (
+    EmbeddingScorer,
+    LLMScorer,
+    ScoreCombiner,
+    SectionScore,
+    ScoringResult,
+    CombinedScore,
+)
 
 __all__ = [
     'ResumeParser',
@@ -28,4 +36,10 @@ __all__ = [
     'InvalidOutputError',
     'LLMClient',
     'JobDescriptionExtractor',
+    'EmbeddingScorer',
+    'LLMScorer',
+    'ScoreCombiner',
+    'SectionScore',
+    'ScoringResult',
+    'CombinedScore',
 ] 
