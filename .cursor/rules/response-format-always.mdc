@@ -1,1 +1,46 @@
- 
+---
+description: 
+globs: 
+alwaysApply: false
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Response Format Standards
+
+## Context
+
+- Applies to every chat interaction
+- Ensures consistent and transparent communication
+- Makes rule application explicit
+- Added after noticing inconsistent rule application tracking
+
+## Critical Rules
+
+- Begin EVERY response with <APPLIED_RULES> section that:
+  - Lists all relevant rule files being applied with @ prefix
+  - Explains why each rule is relevant
+  - Notes which rules were automatically loaded
+- Follow output-format-agent.mdc standards for remaining sections
+- Never skip the <APPLIED_RULES> section even for simple responses
+
+## Examples
+
+<example>
+<APPLIED_RULES>
+- @python-standards-auto.mdc (auto-loaded for .py files)
+- @git-commit-agent.mdc (changes require commit)
+</APPLIED_RULES>
+
+Rest of response follows...
+</example>
+
+<example type="invalid">
+Starting response without listing applied rules
+
+Or listing rules without proper format:
+- python-standards (missing .mdc and @ prefix)
+- git commit rules (improper naming)
+</example> 
