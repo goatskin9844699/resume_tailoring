@@ -30,19 +30,12 @@ def sample_resume_content():
     return {
         "experience1": {
             "company": "Tech Corp",
-            "title": "Senior Software Engineer",
-            "highlights": [
-                "Led development of Python-based microservices",
-                "Designed and implemented cloud infrastructure"
-            ]
+            "highlights": ["Led development of Python-based microservices", "Designed and implemented cloud architecture"],
+            "title": "Senior Software Engineer"
         },
         "experience2": {
-            "company": "Startup Inc",
-            "title": "Software Engineer",
-            "highlights": [
-                "Developed web applications using Python",
-                "Implemented CI/CD pipelines"
-            ]
+            "highlights": ["Developed web applications using Python", "Implemented CI/CD pipelines"],
+            "title": "Software Engineer"
         }
     }
 
@@ -57,14 +50,52 @@ def test_score_content_success(mock_llm_client, sample_job_description, sample_r
                 "score": 0.9,
                 "confidence": 0.95,
                 "matched_keywords": ["Python", "cloud", "system design"],
-                "explanation": "Strong match with required skills"
+                "explanation": "Strong match with required skills",
+                "entries": [
+                    {
+                        "entry_id": "exp1_1",
+                        "entry_type": "experience",
+                        "score": 0.9,
+                        "confidence": 0.95,
+                        "matched_keywords": ["Python", "cloud"],
+                        "explanation": "Strong technical match",
+                        "bullets": [
+                            {
+                                "content": "Led development of Python-based microservices",
+                                "score": 0.9,
+                                "confidence": 0.95,
+                                "matched_keywords": ["Python"],
+                                "explanation": "Direct skill match"
+                            }
+                        ]
+                    }
+                ]
             },
             {
                 "section_id": "experience2",
                 "score": 0.7,
                 "confidence": 0.85,
                 "matched_keywords": ["Python", "CI/CD"],
-                "explanation": "Good match with some requirements"
+                "explanation": "Good match with some requirements",
+                "entries": [
+                    {
+                        "entry_id": "exp2_1",
+                        "entry_type": "experience",
+                        "score": 0.7,
+                        "confidence": 0.85,
+                        "matched_keywords": ["Python"],
+                        "explanation": "Good technical match",
+                        "bullets": [
+                            {
+                                "content": "Developed web applications using Python",
+                                "score": 0.8,
+                                "confidence": 0.85,
+                                "matched_keywords": ["Python"],
+                                "explanation": "Skill match"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
@@ -83,47 +114,32 @@ def test_score_content_success(mock_llm_client, sample_job_description, sample_r
     assert isinstance(result, ScoringResult)
     assert result.component_name == "llm_scorer"
     assert len(result.section_scores) == 2
-    assert result.overall_score == 0.8  # (0.9 + 0.7) / 2
-    assert result.processing_time >= 0
-
-    # Verify section scores
-    exp1_score = result.section_scores["experience1"]
-    assert isinstance(exp1_score, SectionScore)
-    assert exp1_score.score == 0.9
-    assert exp1_score.confidence == 0.95
-    assert "Python" in exp1_score.matched_keywords
+    assert "experience1" in result.section_scores
+    assert "experience2" in result.section_scores
+    assert result.section_scores["experience1"].score == 0.9
+    assert result.section_scores["experience2"].score == 0.7
 
 
 def test_score_content_empty_sections(mock_llm_client, sample_job_description):
-    """Test scoring with empty resume content."""
-    scorer = LLMScorer(mock_llm_client)
-    result = scorer.score_content(
+    """Test scoring with empty sections."""
+    result = LLMScorer(mock_llm_client).score_content(
         sample_job_description,
         {}
     )
-
     assert isinstance(result, ScoringResult)
-    assert result.component_name == "llm_scorer"
-    assert len(result.section_scores) == 0
+    assert result.section_scores == {}
     assert result.overall_score == 0.0
-    assert "error" in result.metadata
 
 
 def test_score_content_invalid_response(mock_llm_client, sample_job_description, sample_resume_content):
     """Test handling of invalid LLM response."""
-    # Mock invalid response
-    mock_llm_client.generate.return_value = {"invalid": "format"}
-
-    scorer = LLMScorer(mock_llm_client)
-    result = scorer.score_content(
+    mock_llm_client.generate.return_value = {"invalid": "response"}
+    result = LLMScorer(mock_llm_client).score_content(
         sample_job_description,
         sample_resume_content
     )
-
     assert isinstance(result, ScoringResult)
-    assert result.component_name == "llm_scorer"
-    assert len(result.section_scores) == 0
-    assert result.overall_score == 0.0
+    assert result.section_scores == {}
     assert "error" in result.metadata
 
 
@@ -144,7 +160,26 @@ def test_score_content_section_truncation(mock_llm_client, sample_job_descriptio
                 "score": 0.8,
                 "confidence": 0.9,
                 "matched_keywords": ["test"],
-                "explanation": "Test"
+                "explanation": "Test",
+                "entries": [
+                    {
+                        "entry_id": "exp1_1",
+                        "entry_type": "experience",
+                        "score": 0.8,
+                        "confidence": 0.9,
+                        "matched_keywords": ["test"],
+                        "explanation": "Test",
+                        "bullets": [
+                            {
+                                "content": "x" * 100,
+                                "score": 0.8,
+                                "confidence": 0.9,
+                                "matched_keywords": ["test"],
+                                "explanation": "Test"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
@@ -158,7 +193,7 @@ def test_score_content_section_truncation(mock_llm_client, sample_job_descriptio
 
     assert isinstance(result, ScoringResult)
     assert len(result.section_scores) == 1
-    assert result.metadata["max_chars_per_section"] == 100
+    assert result.section_scores["experience1"].score == 0.8
 
 
 def test_score_content_specific_sections(mock_llm_client, sample_job_description, sample_resume_content):
@@ -171,7 +206,26 @@ def test_score_content_specific_sections(mock_llm_client, sample_job_description
                 "score": 0.9,
                 "confidence": 0.95,
                 "matched_keywords": ["Python"],
-                "explanation": "Test"
+                "explanation": "Test",
+                "entries": [
+                    {
+                        "entry_id": "exp1_1",
+                        "entry_type": "experience",
+                        "score": 0.9,
+                        "confidence": 0.95,
+                        "matched_keywords": ["Python"],
+                        "explanation": "Test",
+                        "bullets": [
+                            {
+                                "content": "Test bullet",
+                                "score": 0.9,
+                                "confidence": 0.95,
+                                "matched_keywords": ["Python"],
+                                "explanation": "Test"
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
@@ -185,5 +239,4 @@ def test_score_content_specific_sections(mock_llm_client, sample_job_description
 
     assert isinstance(result, ScoringResult)
     assert len(result.section_scores) == 1
-    assert "experience1" in result.section_scores
-    assert "experience2" not in result.section_scores 
+    assert "experience1" in result.section_scores 

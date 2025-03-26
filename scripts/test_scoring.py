@@ -58,6 +58,30 @@ def print_scoring_results(combined_score: CombinedScore) -> None:
             print(f"- Matched Keywords: {', '.join(score.matched_keywords)}")
         if score.relevance_explanation:
             print(f"- Explanation: {score.relevance_explanation}")
+        
+        # Print entries
+        if score.entries:
+            print("\n  Entries:")
+            for entry in score.entries:
+                print(f"\n  {entry.entry_type} ({entry.entry_id}):")
+                print(f"  - Score: {entry.score:.3f}")
+                print(f"  - Confidence: {entry.confidence:.3f}")
+                if entry.matched_keywords:
+                    print(f"  - Matched Keywords: {', '.join(entry.matched_keywords)}")
+                if entry.relevance_explanation:
+                    print(f"  - Explanation: {entry.relevance_explanation}")
+                
+                # Print bullets
+                if entry.bullets:
+                    print("\n    Bullets:")
+                    for bullet in entry.bullets:
+                        print(f"\n    - {bullet.content}")
+                        print(f"      Score: {bullet.score:.3f}")
+                        print(f"      Confidence: {bullet.confidence:.3f}")
+                        if bullet.matched_keywords:
+                            print(f"      Matched Keywords: {', '.join(bullet.matched_keywords)}")
+                        if bullet.relevance_explanation:
+                            print(f"      Explanation: {bullet.relevance_explanation}")
     
     # Print metadata
     print("\nMetadata:")
