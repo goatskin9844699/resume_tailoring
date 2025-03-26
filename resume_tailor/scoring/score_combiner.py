@@ -3,7 +3,13 @@
 import time
 from typing import Dict, List
 
-from .models import SectionScore, ScoringResult, CombinedScore
+from .models import (
+    SectionScore,
+    ScoringResult,
+    CombinedScore,
+    ScoredEntry,
+    ScoredBullet
+)
 
 
 class ScoreCombiner:
@@ -48,6 +54,102 @@ class ScoreCombiner:
             for k, v in scores.items()
         }
 
+    def _combine_bullet_scores(
+        self,
+        component_bullets: Dict[str, List[ScoredBullet]]
+    ) -> List[ScoredBullet]:
+        """Combine bullet scores from multiple components.
+
+        Args:
+            component_bullets: Dictionary mapping component names to their bullet scores.
+
+        Returns:
+            Combined bullet scores.
+        """
+        if not component_bullets:
+            return []
+
+        # Group bullets by content
+        bullets_by_content = {}
+        for component_name, bullets in component_bullets.items():
+            for bullet in bullets:
+                if bullet.content not in bullets_by_content:
+                    bullets_by_content[bullet.content] = []
+                bullets_by_content[bullet.content].append(bullet)
+
+        # Combine scores for each bullet
+        combined_bullets = []
+        for content, bullets in bullets_by_content.items():
+            scores = [bullet.score for bullet in bullets]
+            confidences = [bullet.confidence for bullet in bullets]
+            keywords = set()
+            explanations = []
+
+            for bullet in bullets:
+                keywords.update(bullet.matched_keywords)
+                if bullet.relevance_explanation:
+                    explanations.append(bullet.relevance_explanation)
+
+            combined_bullets.append(ScoredBullet(
+                content=content,
+                score=sum(scores) / len(scores),
+                confidence=sum(confidences) / len(confidences),
+                matched_keywords=list(keywords),
+                relevance_explanation=" | ".join(explanations) if explanations else None
+            ))
+
+        return combined_bullets
+
+    def _combine_entry_scores(
+        self,
+        component_entries: Dict[str, List[ScoredEntry]]
+    ) -> List[ScoredEntry]:
+        """Combine entry scores from multiple components.
+
+        Args:
+            component_entries: Dictionary mapping component names to their entry scores.
+
+        Returns:
+            Combined entry scores.
+        """
+        if not component_entries:
+            return []
+
+        # Group entries by ID
+        entries_by_id = {}
+        for component_name, entries in component_entries.items():
+            for entry in entries:
+                if entry.entry_id not in entries_by_id:
+                    entries_by_id[entry.entry_id] = []
+                entries_by_id[entry.entry_id].append(entry)
+
+        # Combine scores for each entry
+        combined_entries = []
+        for entry_id, entries in entries_by_id.items():
+            scores = [entry.score for entry in entries]
+            confidences = [entry.confidence for entry in entries]
+            keywords = set()
+            explanations = []
+            bullets_by_component = {}
+
+            for entry in entries:
+                keywords.update(entry.matched_keywords)
+                if entry.relevance_explanation:
+                    explanations.append(entry.relevance_explanation)
+                bullets_by_component[entry.entry_id] = entry.bullets
+
+            combined_entries.append(ScoredEntry(
+                entry_id=entry_id,
+                entry_type=entries[0].entry_type,  # Use type from first entry
+                score=sum(scores) / len(scores),
+                confidence=sum(confidences) / len(confidences),
+                matched_keywords=list(keywords),
+                relevance_explanation=" | ".join(explanations) if explanations else None,
+                bullets=self._combine_bullet_scores(bullets_by_component)
+            ))
+
+        return combined_entries
+
     def _combine_section_scores(
         self,
         component_scores: Dict[str, Dict[str, SectionScore]],
@@ -75,6 +177,7 @@ class ScoreCombiner:
             section_confidences = []
             section_keywords = set()
             section_explanations = []
+            entries_by_component = {}
 
             # Collect scores from each component
             for component_name, scores in component_scores.items():
@@ -87,6 +190,7 @@ class ScoreCombiner:
                     section_keywords.update(score.matched_keywords)
                     if score.relevance_explanation:
                         section_explanations.append(score.relevance_explanation)
+                    entries_by_component[component_name] = score.entries
 
             if section_scores:
                 # Calculate combined score
@@ -104,7 +208,8 @@ class ScoreCombiner:
                     score=combined_score,
                     confidence=avg_confidence,
                     matched_keywords=list(section_keywords),
-                    relevance_explanation=combined_explanation
+                    relevance_explanation=combined_explanation,
+                    entries=self._combine_entry_scores(entries_by_component)
                 )
 
         return combined_scores
