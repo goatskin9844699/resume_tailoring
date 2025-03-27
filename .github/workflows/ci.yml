@@ -11,6 +11,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Add timeout to prevent hanging
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
     
@@ -40,6 +42,7 @@ jobs:
         pip list
         
     - name: Run tests and coverage
+      id: tests
       run: |
         pytest tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing
 
@@ -55,3 +58,15 @@ jobs:
         name: coverage-report
         path: coverage_report.txt
         retention-days: 14 
+
+    # Add explicit status check
+    - name: Report status
+      if: always()
+      run: |
+        if [[ "${{ steps.tests.outcome }}" == "success" ]]; then
+          echo "All tests passed successfully!"
+          exit 0
+        else
+          echo "Tests failed!"
+          exit 1
+        fi 
