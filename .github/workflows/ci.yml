@@ -11,8 +11,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Add timeout to prevent hanging
-    timeout-minutes: 10
+    # Reduce timeout to fail faster if stuck
+    timeout-minutes: 5
     steps:
     - uses: actions/checkout@v4
     
@@ -25,6 +25,20 @@ jobs:
           requirements.txt
           requirements-dev.txt
 
+    - name: System health check
+      run: |
+        echo "=== System Info ==="
+        uname -a
+        df -h
+        free -h
+        ps aux | grep python || true
+        echo "=== Python Info ==="
+        which python
+        python --version
+        echo "=== Directory Info ==="
+        pwd
+        ls -la
+
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
@@ -32,13 +46,16 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+        # Install test dependencies first
+        pip install pytest pytest-cov
         # Install the package in development mode
         pip install -e .
+        # Install remaining dependencies
+        pip install -r requirements-dev.txt
         playwright install --with-deps
         # Verify installations
         pip list
@@ -48,17 +65,19 @@ jobs:
         
     - name: Run tests and coverage
       id: tests
+      # Add timeout to the test command itself
       run: |
         # Debug: Print current directory and contents
         pwd
         ls -la
-        # Run tests with verbose output
-        pytest -v tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing
+        echo "=== Running Tests ==="
+        # Run pytest with timeout and fail-fast
+        timeout 180s pytest -v --durations=0 --tb=short --showlocals --fail-fast tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing || (echo "Tests timed out or failed" && exit 1)
 
     - name: Store coverage report
       if: always()  # Store even if tests fail
       run: |
-        coverage report > coverage_report.txt
+        coverage report > coverage_report.txt || echo "No coverage report generated"
         
     - name: Upload coverage report
       if: always()
@@ -76,6 +95,6 @@ jobs:
           echo "All tests passed successfully!"
           exit 0
         else
-          echo "Tests failed!"
+          echo "Tests failed or timed out!"
           exit 1
         fi 
