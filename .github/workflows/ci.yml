@@ -37,14 +37,23 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
+        # Install the package in development mode
+        pip install -e .
         playwright install --with-deps
         # Verify installations
         pip list
+        # Debug: Show package location and Python path
+        python -c "import resume_tailor; print(f'resume_tailor location: {resume_tailor.__file__}')"
+        python -c "import sys; print('Python path:'); print('\n'.join(sys.path))"
         
     - name: Run tests and coverage
       id: tests
       run: |
-        pytest tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing
+        # Debug: Print current directory and contents
+        pwd
+        ls -la
+        # Run tests with verbose output
+        pytest -v tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing
 
     - name: Store coverage report
       if: always()  # Store even if tests fail
