@@ -99,8 +99,7 @@ The tailored resume maintains the same structure as the input resume with:
 The scoring system:
 - Processes all experience entries against job requirements
 - Identifies natural keyword matches in existing content
-- Maps similar achievements and experiences
-- Marks content for potential consolidation
+- Provides relevance scores for content selection
 - Feeds into content selection and resume customization
 
 **Why:** Create comprehensive relevance mapping while preserving all content, using both efficient local processing and advanced semantic understanding. The hybrid approach ensures both speed and accuracy in matching experiences to job requirements.
@@ -192,12 +191,12 @@ The refinement system processes scored content to create an optimized resume usi
 1. **Input Processing**
    - Scored content containing:
      - Original resume content
-     - Relevance scores and relationships
-     - Similar content mappings
+     - Relevance scores for each section
+     - Matched keywords and explanations
    - Job description for context and requirements
 
 2. **Content Organization**
-   - Combines similar experiences based on scoring results
+   - Uses relevance scores to prioritize content
    - Preserves strongest original phrasing and style
    - Maintains narrative flow and career progression
    - Optimizes section ordering by relevance

@@ -17,9 +17,19 @@ dependencies = [
     "langchain-core>=0.1.30",
     "langchain-openai>=0.0.8",
     "openai>=1.14.1",
-    "python-dotenv==1.0.1"
+    "python-dotenv==1.0.1",
+    "playwright>=1.42.0",
+    "pytest-playwright>=0.4.0",
+    "pytest>=8.0.2",
+    "pytest-cov==4.1.0",
+    "sentence-transformers>=3.4.1"
 ]
 
 [tool.setuptools.packages.find]
 include = ["resume_tailor*"]
-exclude = ["specs*", "tests*"] 
+exclude = ["specs*", "tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=resume_tailor" 
