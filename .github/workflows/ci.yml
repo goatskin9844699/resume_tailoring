@@ -1,4 +1,4 @@
-name: CI Tests
+name: ci
 
 on:
   push:
@@ -9,7 +9,8 @@ on:
       - main
 
 jobs:
-  test:
+  ci:
+    name: ci.yml
     runs-on: ubuntu-latest
     # Reduce timeout to fail faster if stuck
     timeout-minutes: 5
