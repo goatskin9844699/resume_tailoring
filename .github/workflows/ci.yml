@@ -50,8 +50,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Install test dependencies first
-        pip install pytest pytest-cov
+        # Install test dependencies first with specific versions
+        pip install 'pytest>=7.0.0' 'pytest-cov>=4.1.0'
         # Install the package in development mode
         pip install -e .
         # Install remaining dependencies
@@ -71,8 +71,16 @@ jobs:
         pwd
         ls -la
         echo "=== Running Tests ==="
-        # Run pytest with timeout and fail-fast
-        timeout 180s pytest -v --durations=0 --tb=short --showlocals --fail-fast tests/ --cov=resume_tailor --cov-fail-under=40 --cov-report=term-missing || (echo "Tests timed out or failed" && exit 1)
+        # Run pytest with proper arguments
+        timeout 180s pytest -v \
+          --durations=0 \
+          --tb=short \
+          --showlocals \
+          -x \
+          tests/ \
+          --cov=resume_tailor \
+          --cov-fail-under=40 \
+          --cov-report=term-missing || (echo "Tests timed out or failed" && exit 1)
 
     - name: Store coverage report
       if: always()  # Store even if tests fail
